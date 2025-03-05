@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sprite Lab</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1A3C34; /* Vert foncé */
+            min-height: 100vh;
+            color: #212121;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            align-items: flex-start; /* Aligne au sommet */
+        }
+        #editorForm {
+            flex: 1;
+            background: #F5F5F5; /* Blanc cassé */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border: 2px solid #2E7D32; /* Vert bordure */
+            max-width: 500px;
+            overflow-y: auto; /* Scroll si le formulaire est long */
+            max-height: 80vh; /* Limite la hauteur du formulaire */
+        }
+        #previewContainer, #gameContainer {
+            flex: 2;
+            text-align: center;
+            background: #FFFFFF;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border: 2px solid #2E7D32;
+            min-width: 400px;
+            height: auto; /* Hauteur adaptative au contenu */
+            max-height: 100%; /* Respecte la hauteur du conteneur parent */
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .animation-group {
+            border: 1px solid #A5D6A7; /* Vert clair */
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            background: #FFFFFF;
+        }
+        h1 {
+            color: #A5D6A7; /* Vert clair */
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        h3 {
+            color: #2E7D32; /* Vert moyen */
+            margin: 10px 0;
+        }
+        label {
+            display: block;
+            margin: 5px 0;
+            color: #212121;
+        }
+        input[type="number"], input[type="text"], select, input[type="color"], input[type="file"] {
+            padding: 8px;
+            border: 1px solid #A5D6A7;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 150px;
+            margin: 5px 0;
+            font-size: 14px;
+            background: #fff;
+            transition: border-color 0.3s;
+        }
+        input[type="number"]:focus, input[type="text"]:focus, select:focus, input[type="color"]:focus {
+            border-color: #1B5E20; /* Vert foncé sur focus */
+            outline: none;
+        }
+        label[for="spriteUpload"] {
+            cursor: pointer;
+            color: #2E7D32;
+            font-weight: bold;
+        }
+        button {
+            background: #2E7D32; /* Vert moyen */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #1B5E20; /* Vert foncé au survol */
+        }
+        #previewCanvas, #gameCanvas {
+            border: 1px solid #A5D6A7;
+            border-radius: 5px;
+            background: #fff;
+            max-width: 100%;
+            height: auto;
+            width: 100%; /* Remplit le conteneur */
+        }
+        small {
+            color: #757575;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sprite Lab</h1>
+    <div class="container">
+        <form id="editorForm">
+            <div class="form-group">
+                <input type="file" id="spriteUpload" accept="image/*">
+                <label for="spriteUpload">Upload Sprite Sheet</label>
+                <button type="button" id="saveSpriteButton">Save Sprite</button>
+            </div>
+
+            <div class="form-group">
+                <label>Default Orientation:</label>
+                <select id="defaultOrientation">
+                    <option value="right">Right</option>
+                    <option value="left">Left</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Transparent Color:</label>
+                <input type="color" id="transparentColor" value="#FFFFFF">
+                <small>(Click preview to pick a color)</small>
+            </div>
+
+            <div class="form-group">
+                <label>Gravity (px/s²):</label>
+                <input type="number" id="gravity" min="0.1" step="0.1" value="0.5">
+            </div>
+
+            <div class="form-group">
+                <h3>Controls</h3>
+                <label>Move Left: <input type="text" id="leftKey" class="key-input" value="ArrowLeft" placeholder="ex: ArrowLeft"></label>
+                <label>Move Right: <input type="text" id="rightKey" class="key-input" value="ArrowRight" placeholder="ex: ArrowRight"></label>
+                <label>Jump: <input type="text" id="jumpKey" class="key-input" value="ArrowUp" placeholder="ex: ArrowUp"></label>
+            </div>
+
+            <div class="animation-group">
+                <h3>Idle Animation</h3>
+                <label>Frames: <input type="number" id="idleFrames" min="1" value="4"></label>
+                <label>Width (px): <input type="number" id="idleWidth" min="1" value="32"></label>
+                <label>Height (px): <input type="number" id="idleHeight" min="1" value="32"></label>
+                <label>Speed (s): <input type="number" id="idleSpeed" min="0.01" step="0.01" value="0.1"></label>
+                <label>Start X: <input type="number" id="idleStartX" min="0" value="0"></label>
+                <label>Start Y: <input type="number" id="idleStartY" min="0" value="0"></label>
+                <label>Padding X (px): <input type="number" id="idlePaddingX" min="0" value="0"></label>
+                <label>Padding Y (px): <input type="number" id="idlePaddingY" min="0" value="0"></label>
+            </div>
+
+            <div class="animation-group">
+                <h3>Walk Animation</h3>
+                <label>Frames: <input type="number" id="walkFrames" min="1" value="4"></label>
+                <label>Width (px): <input type="number" id="walkWidth" min="1" value="32"></label>
+                <label>Height (px): <input type="number" id="walkHeight" min="1" value="32"></label>
+                <label>Speed (s): <input type="number" id="walkSpeed" min="0.01" step="0.01" value="0.1"></label>
+                <label>Start X: <input type="number" id="walkStartX" min="0" value="0"></label>
+                <label>Start Y: <input type="number" id="walkStartY" min="0" value="32"></label>
+                <label>Padding X (px): <input type="number" id="walkPaddingX" min="0" value="0"></label>
+                <label>Padding Y (px): <input type="number" id="walkPaddingY" min="0" value="0"></label>
+            </div>
+
+            <div class="animation-group">
+                <h3>Jump Animation</h3>
+                <label>Frames: <input type="number" id="jumpFrames" min="1" value="4"></label>
+                <label>Width (px): <input type="number" id="jumpWidth" min="1" value="32"></label>
+                <label>Height (px): <input type="number" id="jumpHeight" min="1" value="32"></label>
+                <label>Speed (s): <input type="number" id="jumpSpeed" min="0.01" step="0.01" value="0.1"></label>
+                <label>Start X: <input type="number" id="jumpStartX" min="0" value="0"></label>
+                <label>Start Y: <input type="number" id="jumpStartY" min="0" value="64"></label>
+                <label>Padding X (px): <input type="number" id="jumpPaddingX" min="0" value="0"></label>
+                <label>Padding Y (px): <input type="number" id="jumpPaddingY" min="0" value="0"></label>
+            </div>
+        </form>
+
+        <div id="previewContainer">
+            <h3>Sprite Sheet Preview</h3>
+            <canvas id="previewCanvas"></canvas>
+        </div>
+
+        <div id="gameContainer">
+            <h3>Game Preview</h3>
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const previewCtx = previewCanvas.getContext('2d');
+
+        let player = {
+            x: 50,
+            y: 300,
+            speed: 5,
+            velocityY: 0,
+            jumping: false,
+            sprite: null,
+            originalSprite: null,
+            currentAnimation: 'idle',
+            currentFrame: 0,
+            frameTimer: 0,
+            facingRight: true,
+            defaultFacingRight: true,
+            transparentColor: '#FFFFFF',
+            controls: {
+                left: 'arrowleft',
+                right: 'arrowright',
+                jump: 'arrowup'
+            },
+            animations: {
+                idle: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 0, paddingX: 0, paddingY: 0 },
+                walk: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 32, paddingX: 0, paddingY: 0 },
+                jump: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 64, paddingX: 0, paddingY: 0 }
+            }
+        };
+
+        const keys = {
+            left: false,
+            right: false,
+            jump: false
+        };
+
+        let gravity = 0.5;
+        const jumpForce = -10;
+        const transparencyTolerance = 20;
+
+        function updateParameters() {
+            player.animations.idle = {
+                frames: parseInt(document.getElementById('idleFrames').value) || 4,
+                width: parseInt(document.getElementById('idleWidth').value) || 32,
+                height: parseInt(document.getElementById('idleHeight').value) || 32,
+                speed: parseFloat(document.getElementById('idleSpeed').value) || 0.1,
+                startX: parseInt(document.getElementById('idleStartX').value) || 0,
+                startY: parseInt(document.getElementById('idleStartY').value) || 0,
+                paddingX: parseInt(document.getElementById('idlePaddingX').value) || 0,
+                paddingY: parseInt(document.getElementById('idlePaddingY').value) || 0
+            };
+            player.animations.walk = {
+                frames: parseInt(document.getElementById('walkFrames').value) || 4,
+                width: parseInt(document.getElementById('walkWidth').value) || 32,
+                height: parseInt(document.getElementById('walkHeight').value) || 32,
+                speed: parseFloat(document.getElementById('walkSpeed').value) || 0.1,
+                startX: parseInt(document.getElementById('walkStartX').value) || 0,
+                startY: parseInt(document.getElementById('walkStartY').value) || 32,
+                paddingX: parseInt(document.getElementById('walkPaddingX').value) || 0,
+                paddingY: parseInt(document.getElementById('walkPaddingY').value) || 0
+            };
+            player.animations.jump = {
+                frames: parseInt(document.getElementById('jumpFrames').value) || 4,
+                width: parseInt(document.getElementById('jumpWidth').value) || 32,
+                height: parseInt(document.getElementById('jumpHeight').value) || 32,
+                speed: parseFloat(document.getElementById('jumpSpeed').value) || 0.1,
+                startX: parseInt(document.getElementById('jumpStartX').value) || 0,
+                startY: parseInt(document.getElementById('jumpStartY').value) || 64,
+                paddingX: parseInt(document.getElementById('jumpPaddingX').value) || 0,
+                paddingY: parseInt(document.getElementById('jumpPaddingY').value) || 0
+            };
+
+            player.defaultFacingRight = document.getElementById('defaultOrientation').value === 'right';
+            player.facingRight = player.defaultFacingRight;
+            player.transparentColor = document.getElementById('transparentColor').value;
+            gravity = parseFloat(document.getElementById('gravity').value) || 0.5;
+
+            player.controls.left = document.getElementById('leftKey').value.toLowerCase() || 'arrowleft';
+            player.controls.right = document.getElementById('rightKey').value.toLowerCase() || 'arrowright';
+            player.controls.jump = document.getElementById('jumpKey').value.toLowerCase() || 'arrowup';
+
+            if (player.originalSprite) {
+                applyTransparency(player.originalSprite);
+            }
+        }
+
+        function applyTransparency(img) {
+            console.log("Applying transparency with color:", player.transparentColor);
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(img, 0, 0);
+
+            const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
+            const data = imageData.data;
+            const transparentRGB = hexToRgb(player.transparentColor);
+            console.log("Target RGB color:", transparentRGB);
+
+            let pixelsChanged = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                const rDiff = Math.abs(data[i] - transparentRGB.r);
+                const gDiff = Math.abs(data[i + 1] - transparentRGB.g);
+                const bDiff = Math.abs(data[i + 2] - transparentRGB.b);
+                if (rDiff <= transparencyTolerance && gDiff <= transparencyTolerance && bDiff <= transparencyTolerance) {
+                    data[i + 3] = 0;
+                    pixelsChanged++;
+                }
+            }
+            console.log("Pixels made transparent:", pixelsChanged);
+
+            tempCtx.putImageData(imageData, 0, 0);
+
+            player.sprite = new Image();
+            player.sprite.onload = function() {
+                console.log("New image loaded with transparency");
+                previewCanvas.width = img.width;
+                previewCanvas.height = img.height;
+                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                previewCtx.drawImage(player.sprite, 0, 0);
+            };
+            player.sprite.src = tempCanvas.toDataURL();
+            player.width = player.animations.idle.width;
+            player.height = player.animations.idle.height;
+        }
+
+        document.getElementById('saveSpriteButton').addEventListener('click', () => {
+            if (!player.originalSprite) {
+                alert("No sprite sheet loaded to save!");
+                return;
+            }
+
+            const characterData = {
+                sprite: player.originalSprite.src,
+                parameters: {
+                    defaultOrientation: document.getElementById('defaultOrientation').value,
+                    transparentColor: player.transparentColor,
+                    gravity: gravity,
+                    controls: player.controls,
+                    animations: player.animations
+                }
+            };
+
+            const jsonString = JSON.stringify(characterData);
+            const blob = new Blob([jsonString], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'sprite.sprite';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            console.log("Sprite saved:", characterData);
+        });
+
+        document.getElementById('spriteUpload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                console.log("Starting upload of file:", file.name);
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        console.log("Image loaded successfully, dimensions:", img.width, "x", img.height);
+                        player.originalSprite = img;
+                        applyTransparency(img);
+                    };
+                    img.onerror = function() {
+                        console.error("Error loading image");
+                    };
+                    img.src = event.target.result;
+                };
+                reader.onerror = function() {
+                    console.error("Error reading file");
+                };
+                reader.readAsDataURL(file);
+            } else {
+                console.error("No file selected");
+            }
+        });
+
+        const loadedSprite = localStorage.getItem('loadedSprite');
+        if (loadedSprite) {
+            try {
+                const characterData = JSON.parse(loadedSprite);
+                const img = new Image();
+                img.onload = function() {
+                    console.log("Character loaded successfully from localStorage");
+                    player.originalSprite = img;
+                    applyTransparency(img);
+
+                    document.getElementById('defaultOrientation').value = characterData.parameters.defaultOrientation;
+                    player.defaultFacingRight = characterData.parameters.defaultOrientation === 'right';
+                    player.facingRight = player.defaultFacingRight;
+                    document.getElementById('transparentColor').value = characterData.parameters.transparentColor;
+                    player.transparentColor = characterData.parameters.transparentColor;
+                    document.getElementById('gravity').value = characterData.parameters.gravity;
+                    gravity = characterData.parameters.gravity;
+
+                    player.controls = characterData.parameters.controls;
+                    document.getElementById('leftKey').value = player.controls.left;
+                    document.getElementById('rightKey').value = player.controls.right;
+                    document.getElementById('jumpKey').value = player.controls.jump;
+
+                    player.animations = characterData.parameters.animations;
+                    document.getElementById('idleFrames').value = player.animations.idle.frames;
+                    document.getElementById('idleWidth').value = player.animations.idle.width;
+                    document.getElementById('idleHeight').value = player.animations.idle.height;
+                    document.getElementById('idleSpeed').value = player.animations.idle.speed;
+                    document.getElementById('idleStartX').value = player.animations.idle.startX;
+                    document.getElementById('idleStartY').value = player.animations.idle.startY;
+                    document.getElementById('idlePaddingX').value = player.animations.idle.paddingX;
+                    document.getElementById('idlePaddingY').value = player.animations.idle.paddingY;
+
+                    document.getElementById('walkFrames').value = player.animations.walk.frames;
+                    document.getElementById('walkWidth').value = player.animations.walk.width;
+                    document.getElementById('walkHeight').value = player.animations.walk.height;
+                    document.getElementById('walkSpeed').value = player.animations.walk.speed;
+                    document.getElementById('walkStartX').value = player.animations.walk.startX;
+                    document.getElementById('walkStartY').value = player.animations.walk.startY;
+                    document.getElementById('walkPaddingX').value = player.animations.walk.paddingX;
+                    document.getElementById('walkPaddingY').value = player.animations.walk.paddingY;
+
+                    document.getElementById('jumpFrames').value = player.animations.jump.frames;
+                    document.getElementById('jumpWidth').value = player.animations.jump.width;
+                    document.getElementById('jumpHeight').value = player.animations.jump.height;
+                    document.getElementById('jumpSpeed').value = player.animations.jump.speed;
+                    document.getElementById('jumpStartX').value = player.animations.jump.startX;
+                    document.getElementById('jumpStartY').value = player.animations.jump.startY;
+                    document.getElementById('jumpPaddingX').value = player.animations.jump.paddingX;
+                    document.getElementById('jumpPaddingY').value = player.animations.jump.paddingY;
+                };
+                img.src = characterData.sprite;
+                localStorage.removeItem('loadedSprite');
+            } catch (e) {
+                console.error("Error parsing loaded sprite:", e);
+            }
+        }
+
+        previewCanvas.addEventListener('click', (e) => {
+            if (!player.sprite) return;
+
+            const rect = previewCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const tempCtx = document.createElement('canvas').getContext('2d');
+            tempCtx.drawImage(player.originalSprite, 0, 0);
+            const pixelData = tempCtx.getImageData(x, y, 1, 1).data;
+            const hexColor = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
+            console.log("Color picked from preview:", hexColor, "RGB:", pixelData);
+
+            document.getElementById('transparentColor').value = hexColor;
+            player.transparentColor = hexColor;
+            applyTransparency(player.originalSprite);
+        });
+
+        const inputs = document.querySelectorAll('#editorForm input, #editorForm select');
+        inputs.forEach(input => {
+            if (input.id !== 'spriteUpload') {
+                input.addEventListener('input', updateParameters);
+                input.addEventListener('change', updateParameters);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === player.controls.left) keys.left = true;
+            if (key === player.controls.right) keys.right = true;
+            if (key === player.controls.jump && !player.jumping) keys.jump = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === player.controls.left) keys.left = false;
+            if (key === player.controls.right) keys.right = false;
+            if (key === player.controls.jump) keys.jump = false;
+        });
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+        }
+
+        function updateAnimation(delta) {
+            const anim = player.animations[player.currentAnimation];
+
+            if (player.jumping) {
+                player.currentAnimation = 'jump';
+            } else {
+                if (keys.left || keys.right) {
+                    player.currentAnimation = 'walk';
+                } else {
+                    player.currentAnimation = 'idle';
+                }
+            }
+
+            player.frameTimer += delta;
+            if (player.frameTimer >= anim.speed) {
+                player.currentFrame = (player.currentFrame + 1) % anim.frames;
+                if (player.currentFrame >= anim.frames) {
+                    player.currentFrame = anim.frames - 1;
+                }
+                player.frameTimer = 0;
+            }
+
+            player.width = anim.width;
+            player.height = anim.height;
+        }
+
+        function updatePreview() {
+            if (!player.sprite) return;
+
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            previewCtx.drawImage(player.sprite, 0, 0);
+
+            const anim = player.animations[player.currentAnimation];
+            const limitedFrame = Math.min(player.currentFrame, anim.frames - 1);
+            const frameX = anim.startX + limitedFrame * (anim.width + anim.paddingX);
+            const frameY = anim.startY;
+
+            previewCtx.strokeStyle = 'red';
+            previewCtx.lineWidth = 2;
+            previewCtx.strokeRect(frameX, frameY, anim.width, anim.height);
+        }
+
+        function gameLoop(timestamp) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (keys.left && player.x > 0) {
+                player.x -= player.speed;
+                player.facingRight = false;
+            }
+            if (keys.right && player.x < canvas.width - player.width) {
+                player.x += player.speed;
+                player.facingRight = true;
+            }
+            if (keys.jump && !player.jumping) {
+                player.velocityY = jumpForce;
+                player.jumping = true;
+            }
+
+            player.velocityY += gravity;
+            player.y += player.velocityY;
+            if (player.y > canvas.height - player.height) {
+                player.y = canvas.height - player.height;
+                player.velocityY = 0;
+                player.jumping = false;
+            }
+
+            updateAnimation(player.speed/60);
+            updatePreview();
+
+            if (player.sprite) {
+                const anim = player.animations[player.currentAnimation];
+                const frameX = anim.startX + Math.min(player.currentFrame, anim.frames - 1) * (anim.width + anim.paddingX);
+                const frameY = anim.startY;
+
+                ctx.save();
+                
+                const shouldMirror = player.facingRight !== player.defaultFacingRight;
+                if (shouldMirror) {
+                    ctx.scale(-1, 1);
+                    ctx.translate(-canvas.width, 0);
+                    ctx.drawImage(
+                        player.sprite,
+                        frameX, frameY,
+                        anim.width, anim.height,
+                        canvas.width - player.x - anim.width, player.y,
+                        anim.width, anim.height
+                    );
+                } else {
+                    ctx.drawImage(
+                        player.sprite,
+                        frameX, frameY,
+                        anim.width, anim.height,
+                        player.x, player.y,
+                        anim.width, anim.height
+                    );
+                }
+                
+                ctx.restore();
+            } else {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

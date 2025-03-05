@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sprite Lab - Home</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1A3C34; /* Vert foncé */
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: #F5F5F5; /* Blanc cassé */
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 350px;
+            border: 2px solid #2E7D32; /* Vert bordure */
+        }
+        h1 {
+            color: #A5D6A7; /* Vert clair */
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        button {
+            background: #2E7D32; /* Vert moyen */
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #1B5E20; /* Vert foncé au survol */
+        }
+        select {
+            padding: 12px;
+            margin: 10px 0;
+            font-size: 16px;
+            width: 100%;
+            border: 1px solid #A5D6A7;
+            border-radius: 8px;
+            background: #FFFFFF;
+            transition: border-color 0.3s;
+        }
+        select:focus {
+            border-color: #1B5E20;
+            outline: none;
+        }
+        #loadSprite {
+            display: none;
+        }
+        #previewCanvas {
+            border: 1px solid #A5D6A7;
+            border-radius: 5px;
+            margin-top: 20px;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sprite Lab</h1>
+        <button onclick="window.location.href='editor.html'">Create New Sprite</button>
+        <br>
+        <select id="spriteList" onchange="previewSprite(this.value)">
+            <option value="">Select a sprite...</option>
+        </select>
+        <button id="loadFromRepoButton">Load from List</button>
+        <br>
+        <button id="loadFromFileButton">Load from File</button>
+        <input type="file" id="loadSprite" accept=".sprite">
+        <br>
+        <canvas id="previewCanvas" width="64" height="64"></canvas>
+    </div>
+
+    <script>
+        const previewCanvas = document.getElementById('previewCanvas');
+        const previewCtx = previewCanvas.getContext('2d');
+        let previewData = null; // Renommé de previewSprite à previewData
+        let previewFrame = 0;
+        let previewTimer = 0;
+
+        fetch('sprites/sprites.json')
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to load sprites.json');
+                return response.json();
+            })
+            .then(data => {
+                const spriteList = document.getElementById('spriteList');
+                data.forEach(sprite => {
+                    const option = document.createElement('option');
+                    option.value = `sprites/${sprite.file}`;
+                    option.textContent = sprite.name;
+                    spriteList.appendChild(option);
+                });
+            })
+            .catch(error => console.error("Error loading sprite list:", error));
+
+        function previewSprite(spriteUrl) {
+            if (!spriteUrl) {
+                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                previewData = null; // Mis à jour avec previewData
+                return;
+            }
+
+            fetch(spriteUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to load sprite file');
+                    return response.text();
+                })
+                .then(data => {
+                    const characterData = JSON.parse(data);
+                    const img = new Image();
+                    img.onload = function() {
+                        applyPreviewTransparency(img, characterData.parameters.transparentColor);
+                        previewData = { // Mis à jour avec previewData
+                            image: img,
+                            idle: characterData.parameters.animations.idle
+                        };
+                        previewFrame = 0;
+                        previewTimer = 0;
+                    };
+                    img.onerror = function() {
+                        console.error("Error loading sprite image for preview");
+                    };
+                    img.src = characterData.sprite;
+                })
+                .catch(error => console.error("Error loading sprite for preview:", error));
+        }
+
+        function applyPreviewTransparency(img, transparentColor) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(img, 0, 0);
+
+            const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
+            const data = imageData.data;
+            const transparentRGB = hexToRgb(transparentColor);
+            const tolerance = 20;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const rDiff = Math.abs(data[i] - transparentRGB.r);
+                const gDiff = Math.abs(data[i + 1] - transparentRGB.g);
+                const bDiff = Math.abs(data[i + 2] - transparentRGB.b);
+                if (rDiff <= tolerance && gDiff <= tolerance && bDiff <= tolerance) {
+                    data[i + 3] = 0;
+                }
+            }
+            tempCtx.putImageData(imageData, 0, 0);
+            img.src = tempCanvas.toDataURL();
+        }
+
+        function loadFromRepo() {
+            const selectedSpriteUrl = document.getElementById('spriteList').value;
+            if (selectedSpriteUrl) {
+                fetch(selectedSpriteUrl)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Failed to load sprite file');
+                        return response.text();
+                    })
+                    .then(data => {
+                        localStorage.setItem('loadedSprite', data);
+                        console.log("Sprite loaded from list:", selectedSpriteUrl);
+                        window.location.href = 'editor.html';
+                    })
+                    .catch(error => console.error("Error loading sprite from list:", error));
+            } else {
+                alert("Please select a sprite from the list!");
+            }
+        }
+
+        function loadSprite(file) {
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    localStorage.setItem('loadedSprite', event.target.result);
+                    console.log("Sprite loaded from file:", file.name);
+                    window.location.href = 'editor.html';
+                };
+                reader.onerror = function() {
+                    console.error("Error reading file:", file.name);
+                };
+                reader.readAsText(file);
+            } else {
+                console.error("No file selected");
+            }
+        }
+
+        document.getElementById('loadFromRepoButton').addEventListener('click', loadFromRepo);
+        document.getElementById('loadFromFileButton').addEventListener('click', () => {
+            document.getElementById('loadSprite').click();
+        });
+        document.getElementById('loadSprite').addEventListener('change', (e) => {
+            loadSprite(e.target.files[0]);
+        });
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function previewLoop(timestamp) {
+            if (previewData) { // Mis à jour avec previewData
+                const anim = previewData.idle; // Mis à jour avec previewData
+                previewTimer += 1 / 60;
+                if (previewTimer >= anim.speed) {
+                    previewFrame = (previewFrame + 1) % anim.frames;
+                    if (previewFrame >= anim.frames) {
+                        previewFrame = anim.frames - 1;
+                    }
+                    previewTimer = 0;
+                }
+
+                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                const frameX = anim.startX + Math.min(previewFrame, anim.frames - 1) * (anim.width + anim.paddingX);
+                const frameY = anim.startY;
+                previewCtx.drawImage(
+                    previewData.image, // Mis à jour avec previewData
+                    frameX, frameY,
+                    anim.width, anim.height,
+                    (previewCanvas.width - anim.width) / 2, (previewCanvas.height - anim.height) / 2,
+                    anim.width, anim.height
+                );
+            }
+            requestAnimationFrame(previewLoop);
+        }
+
+        requestAnimationFrame(previewLoop);
+    </script>
+</body>
+</html>
