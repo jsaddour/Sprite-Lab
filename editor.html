@@ -144,6 +144,11 @@
             </div>
 
             <div class="form-group">
+                <label>Zoom (ex: 1.0 = normal, 2.0 = double):</label>
+                <input type="number" id="zoom" min="0.1" step="0.1" value="1.0">
+            </div>
+
+            <div class="form-group">
                 <h3>Controls</h3>
                 <label>Move Left: <input type="text" id="leftKey" class="key-input" value="ArrowLeft" placeholder="ex: ArrowLeft"></label>
                 <label>Move Right: <input type="text" id="rightKey" class="key-input" value="ArrowRight" placeholder="ex: ArrowRight"></label>
@@ -218,6 +223,7 @@
             facingRight: true,
             defaultFacingRight: true,
             transparentColor: '#FFFFFF',
+            zoom: 1.0,
             controls: {
                 left: 'arrowleft',
                 right: 'arrowright',
@@ -241,45 +247,33 @@
         const transparencyTolerance = 20;
 
         function updateParameters() {
-            player.animations.idle = {
-                frames: parseInt(document.getElementById('idleFrames').value) || 4,
-                width: parseInt(document.getElementById('idleWidth').value) || 32,
-                height: parseInt(document.getElementById('idleHeight').value) || 32,
-                speed: parseFloat(document.getElementById('idleSpeed').value) || 0.1,
-                startX: parseInt(document.getElementById('idleStartX').value) || 0,
-                startY: parseInt(document.getElementById('idleStartY').value) || 0,
-                paddingX: parseInt(document.getElementById('idlePaddingX').value) || 0,
-                paddingY: parseInt(document.getElementById('idlePaddingY').value) || 0
-            };
-            player.animations.walk = {
-                frames: parseInt(document.getElementById('walkFrames').value) || 4,
-                width: parseInt(document.getElementById('walkWidth').value) || 32,
-                height: parseInt(document.getElementById('walkHeight').value) || 32,
-                speed: parseFloat(document.getElementById('walkSpeed').value) || 0.1,
-                startX: parseInt(document.getElementById('walkStartX').value) || 0,
-                startY: parseInt(document.getElementById('walkStartY').value) || 32,
-                paddingX: parseInt(document.getElementById('walkPaddingX').value) || 0,
-                paddingY: parseInt(document.getElementById('walkPaddingY').value) || 0
-            };
-            player.animations.jump = {
-                frames: parseInt(document.getElementById('jumpFrames').value) || 4,
-                width: parseInt(document.getElementById('jumpWidth').value) || 32,
-                height: parseInt(document.getElementById('jumpHeight').value) || 32,
-                speed: parseFloat(document.getElementById('jumpSpeed').value) || 0.1,
-                startX: parseInt(document.getElementById('jumpStartX').value) || 0,
-                startY: parseInt(document.getElementById('jumpStartY').value) || 64,
-                paddingX: parseInt(document.getElementById('jumpPaddingX').value) || 0,
-                paddingY: parseInt(document.getElementById('jumpPaddingY').value) || 0
-            };
+            const animationIds = ['idle', 'walk', 'jump']; // Liste extensible des animations
+
+            animationIds.forEach(animId => {
+                const prefix = animId.charAt(0).toUpperCase() + animId.slice(1);
+                const anim = player.animations[animId];
+                const startYInput = document.getElementById(`${animId}StartY`).value;
+                const parsedStartY = parseInt(startYInput);
+
+                console.log(`Updating ${animId} - StartY Input: ${startYInput}, Parsed: ${parsedStartY}`);
+
+                anim.frames = parseInt(document.getElementById(`${animId}Frames`).value) || 4;
+                anim.width = parseInt(document.getElementById(`${animId}Width`).value) || 32;
+                anim.height = parseInt(document.getElementById(`${animId}Height`).value) || 32;
+                anim.speed = parseFloat(document.getElementById(`${animId}Speed`).value) || 0.1;
+                anim.startX = parseInt(document.getElementById(`${animId}StartX`).value) || 0;
+                anim.startY = isNaN(parsedStartY) ? (anim.startY || 0) : parsedStartY; // Valeur par défaut basée sur l'état actuel
+                anim.paddingX = parseInt(document.getElementById(`${animId}PaddingX`).value) || 0;
+                anim.paddingY = parseInt(document.getElementById(`${animId}PaddingY`).value) || 0;
+
+                console.log(`Updated ${animId} Animation - StartY: ${anim.startY}`);
+            });
 
             player.defaultFacingRight = document.getElementById('defaultOrientation').value === 'right';
             player.facingRight = player.defaultFacingRight;
             player.transparentColor = document.getElementById('transparentColor').value;
             gravity = parseFloat(document.getElementById('gravity').value) || 0.5;
-
-            player.controls.left = document.getElementById('leftKey').value.toLowerCase() || 'arrowleft';
-            player.controls.right = document.getElementById('rightKey').value.toLowerCase() || 'arrowright';
-            player.controls.jump = document.getElementById('jumpKey').value.toLowerCase() || 'arrowup';
+            player.zoom = parseFloat(document.getElementById('zoom').value) || 1.0;
 
             if (player.originalSprite) {
                 applyTransparency(player.originalSprite);
@@ -338,6 +332,7 @@
                     defaultOrientation: document.getElementById('defaultOrientation').value,
                     transparentColor: player.transparentColor,
                     gravity: gravity,
+                    zoom: player.zoom,
                     controls: player.controls,
                     animations: player.animations
                 }
@@ -399,6 +394,8 @@
                     player.transparentColor = characterData.parameters.transparentColor;
                     document.getElementById('gravity').value = characterData.parameters.gravity;
                     gravity = characterData.parameters.gravity;
+                    document.getElementById('zoom').value = characterData.parameters.zoom || 1.0;
+                    player.zoom = characterData.parameters.zoom || 1.0;
 
                     player.controls = characterData.parameters.controls;
                     document.getElementById('leftKey').value = player.controls.left;
@@ -529,6 +526,8 @@
             const frameX = anim.startX + limitedFrame * (anim.width + anim.paddingX);
             const frameY = anim.startY;
 
+            console.log(`Preview - Animation: ${player.currentAnimation}, Frame: ${limitedFrame}, StartX: ${anim.startX}, StartY: ${anim.startY}, FrameX: ${frameX}, FrameY: ${frameY}`);
+
             previewCtx.strokeStyle = 'red';
             previewCtx.lineWidth = 2;
             previewCtx.strokeRect(frameX, frameY, anim.width, anim.height);
@@ -541,7 +540,7 @@
                 player.x -= player.speed;
                 player.facingRight = false;
             }
-            if (keys.right && player.x < canvas.width - player.width) {
+            if (keys.right && player.x < canvas.width - (player.width * player.zoom)) {
                 player.x += player.speed;
                 player.facingRight = true;
             }
@@ -552,8 +551,8 @@
 
             player.velocityY += gravity;
             player.y += player.velocityY;
-            if (player.y > canvas.height - player.height) {
-                player.y = canvas.height - player.height;
+            if (player.y > canvas.height - (player.height * player.zoom)) {
+                player.y = canvas.height - (player.height * player.zoom);
                 player.velocityY = 0;
                 player.jumping = false;
             }
@@ -563,8 +562,11 @@
 
             if (player.sprite) {
                 const anim = player.animations[player.currentAnimation];
-                const frameX = anim.startX + Math.min(player.currentFrame, anim.frames - 1) * (anim.width + anim.paddingX);
+                const limitedFrame = Math.min(player.currentFrame, anim.frames - 1);
+                const frameX = anim.startX + limitedFrame * (anim.width + anim.paddingX);
                 const frameY = anim.startY;
+
+                console.log(`Game - Animation: ${player.currentAnimation}, Frame: ${limitedFrame}, StartX: ${anim.startX}, StartY: ${anim.startY}, FrameX: ${frameX}, FrameY: ${frameY}`);
 
                 ctx.save();
                 
@@ -576,8 +578,8 @@
                         player.sprite,
                         frameX, frameY,
                         anim.width, anim.height,
-                        canvas.width - player.x - anim.width, player.y,
-                        anim.width, anim.height
+                        canvas.width - player.x - (anim.width * player.zoom), player.y,
+                        anim.width * player.zoom, anim.height * player.zoom
                     );
                 } else {
                     ctx.drawImage(
@@ -585,14 +587,14 @@
                         frameX, frameY,
                         anim.width, anim.height,
                         player.x, player.y,
-                        anim.width, anim.height
+                        anim.width * player.zoom, anim.height * player.zoom
                     );
                 }
                 
                 ctx.restore();
             } else {
                 ctx.fillStyle = 'red';
-                ctx.fillRect(player.x, player.y, player.width, player.height);
+                ctx.fillRect(player.x, player.y, player.width * player.zoom, player.height * player.zoom);
             }
 
             requestAnimationFrame(gameLoop);
