@@ -128,6 +128,7 @@
             cursor: pointer;
             font-size: 16px;
             transition: background 0.3s;
+            margin-top: 10px;
         }
         button:hover {
             background: #1B5E20;
@@ -155,7 +156,6 @@
                 <label for="spriteUpload">Upload Sprite Sheet</label>
                 <button type="button" id="saveSpriteButton">Save Sprite</button>
             </div>
-
             <div class="form-group">
                 <label>Default Orientation:</label>
                 <select id="defaultOrientation">
@@ -163,23 +163,19 @@
                     <option value="left">Left</option>
                 </select>
             </div>
-
             <div class="form-group">
                 <label>Transparent Color:</label>
                 <input type="color" id="transparentColor" value="#FFFFFF">
                 <small>(Click preview to pick a color)</small>
             </div>
-
             <div class="form-group">
                 <label>Gravity (px/s²):</label>
                 <input type="number" id="gravity" min="0.1" step="0.1" value="0.5">
             </div>
-
             <div class="form-group">
                 <label>Zoom (ex: 1.0 = normal, 2.0 = double):</label>
                 <input type="number" id="zoom" min="0.1" step="0.1" value="1.0">
             </div>
-
             <div class="form-group">
                 <h3>Controls</h3>
                 <label>Move Left: <input type="text" id="leftKey" class="key-input" value="ArrowLeft" placeholder="ex: ArrowLeft"></label>
@@ -187,7 +183,6 @@
                 <label>Jump: <input type="text" id="jumpKey" class="key-input" value="ArrowUp" placeholder="ex: ArrowUp"></label>
                 <div id="customControls"></div>
             </div>
-
             <div class="action-group">
                 <div class="action-header" data-action="idle">
                     <h3>Idle Action</h3>
@@ -210,7 +205,6 @@
                     <label>Distance Y (px/frame): <input type="number" id="idleDistanceY" step="0.1" value="0"></label>
                 </div>
             </div>
-
             <div class="action-group collapsed">
                 <div class="action-header" data-action="walk">
                     <h3>Walk Action</h3>
@@ -233,7 +227,6 @@
                     <label>Distance Y (px/frame): <input type="number" id="walkDistanceY" step="0.1" value="0"></label>
                 </div>
             </div>
-
             <div class="action-group collapsed">
                 <div class="action-header" data-action="jump">
                     <h3>Jump Action</h3>
@@ -256,7 +249,6 @@
                     <label>Distance Y (px/frame): <input type="number" id="jumpDistanceY" step="0.1" value="-10"></label>
                 </div>
             </div>
-
             <div class="form-group">
                 <button type="button" id="addCustomAction">Add Custom Action</button>
             </div>
@@ -270,77 +262,196 @@
         <div id="gameContainer">
             <h3>Game Preview</h3>
             <canvas id="gameCanvas" width="400" height="400"></canvas>
+            <button id="playButton">Play</button>
         </div>
     </div>
 
+    <script src="engine.js"></script>
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
         const previewCanvas = document.getElementById('previewCanvas');
         const previewCtx = previewCanvas.getContext('2d');
-
-        let player = {
-            x: 50,
-            y: 300,
-            speed: 5,
-            velocityY: 0,
-            jumping: false,
-            sprite: null,
-            originalSprite: null,
-            currentAnimation: 'idle',
-            currentFrame: 0,
-            frameTimer: 0,
-            facingRight: true,
-            defaultFacingRight: true,
-            transparentColor: '#FFFFFF',
-            zoom: 1.0,
-            controls: {
-                left: 'arrowleft',
-                right: 'arrowright',
-                jump: 'arrowup'
-            },
-            animations: {
-                idle: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 0, paddingX: 0, paddingY: 0 },
-                walk: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 32, paddingX: 0, paddingY: 0 },
-                jump: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 64, paddingX: 0, paddingY: 0 }
-            },
-            behaviors: {
-                idle: { distanceX: 0, distanceY: 0 },
-                walk: { distanceX: 5, distanceY: 0 },
-                jump: { distanceX: 0, distanceY: -10 }
-            }
-        };
-
-        const keys = {
-            left: false,
-            right: false,
-            jump: false,
-            jumpPressed: false
-        };
-
-        let gravity = 0.5;
-        const transparencyTolerance = 20;
+        let playerSprite = null;
         let customActionCount = 0;
+        let gameEngine;
 
-        function addCustomAction() {
+        function initializeEngine(spriteData = {}) {
+            gameEngine = new GameEngine('gameCanvas', spriteData);
+            requestAnimationFrame(previewLoop);
+        }
+
+        function getAnimationParams(action) {
+            return {
+                frames: parseInt(document.getElementById(`${action}Frames`)?.value) || 4,
+                width: parseInt(document.getElementById(`${action}Width`)?.value) || 32,
+                height: parseInt(document.getElementById(`${action}Height`)?.value) || 32,
+                speed: parseFloat(document.getElementById(`${action}Speed`)?.value) || 0.1,
+                startX: parseInt(document.getElementById(`${action}StartX`)?.value) || 0,
+                startY: parseInt(document.getElementById(`${action}StartY`)?.value) || 0,
+                paddingX: parseInt(document.getElementById(`${action}PaddingX`)?.value) || 0,
+                paddingY: parseInt(document.getElementById(`${action}PaddingY`)?.value) || 0
+            };
+        }
+
+        function getBehaviorParams(action) {
+            return {
+                distanceX: parseFloat(document.getElementById(`${action}DistanceX`)?.value) || 0,
+                distanceY: parseFloat(document.getElementById(`${action}DistanceY`)?.value) || 0
+            };
+        }
+
+        function updateParameters() {
+            const spriteData = {
+                sprite: playerSprite?.src,
+                parameters: {
+                    defaultOrientation: document.getElementById('defaultOrientation').value,
+                    transparentColor: document.getElementById('transparentColor').value,
+                    gravity: parseFloat(document.getElementById('gravity').value),
+                    zoom: parseFloat(document.getElementById('zoom').value),
+                    controls: {
+                        left: document.getElementById('leftKey').value.toLowerCase(),
+                        right: document.getElementById('rightKey').value.toLowerCase(),
+                        jump: document.getElementById('jumpKey').value.toLowerCase()
+                    },
+                    animations: {},
+                    behaviors: {}
+                }
+            };
+
+            const animationIds = ['idle', 'walk', 'jump'].concat(
+                Array.from(document.querySelectorAll('.action-group'))
+                    .filter(group => group.querySelector('.action-header').dataset.action.startsWith('custom'))
+                    .map(group => group.querySelector('.action-header').dataset.action)
+            );
+
+            animationIds.forEach(animId => {
+                spriteData.parameters.animations[animId] = getAnimationParams(animId);
+                spriteData.parameters.behaviors[animId] = getBehaviorParams(animId);
+                if (animId.startsWith('custom')) {
+                    spriteData.parameters.controls[animId] = document.getElementById(`${animId}Key`)?.value.toLowerCase() || '';
+                    spriteData.parameters.behaviors[animId].repeat = document.getElementById(`${animId}Repeat`)?.checked || false;
+                }
+            });
+
+            if (gameEngine) {
+                gameEngine.updateSprite(spriteData);
+            }
+        }
+
+        function applyTransparency(img) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(img, 0, 0);
+
+            const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
+            const data = imageData.data;
+            const transparentRGB = hexToRgb(document.getElementById('transparentColor').value);
+
+            for (let i = 0; i < data.length; i += 4) {
+                const rDiff = Math.abs(data[i] - transparentRGB.r);
+                const gDiff = Math.abs(data[i + 1] - transparentRGB.g);
+                const bDiff = Math.abs(data[i + 2] - transparentRGB.b);
+                if (rDiff <= 20 && gDiff <= 20 && bDiff <= 20) {
+                    data[i + 3] = 0;
+                }
+            }
+
+            tempCtx.putImageData(imageData, 0, 0);
+            playerSprite = new Image();
+            playerSprite.onload = () => {
+                previewCanvas.width = img.width;
+                previewCanvas.height = img.height;
+                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                previewCtx.drawImage(playerSprite, 0, 0);
+                updateParameters();
+            };
+            playerSprite.src = tempCanvas.toDataURL();
+        }
+
+        function updatePreview() {
+            if (!playerSprite || !gameEngine || !gameEngine.player) return;
+
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            previewCtx.drawImage(playerSprite, 0, 0);
+
+            const anim = gameEngine.player.animations[gameEngine.player.currentAnimation];
+            if (!anim) return;
+
+            const limitedFrame = Math.min(gameEngine.player.currentFrame, anim.frames - 1);
+            const frameX = anim.startX + limitedFrame * (anim.width + anim.paddingX);
+            const frameY = anim.startY;
+
+            previewCtx.strokeStyle = 'red';
+            previewCtx.lineWidth = 2;
+            previewCtx.strokeRect(frameX, frameY, anim.width, anim.height);
+        }
+
+        function previewLoop(timestamp) {
+            updatePreview();
+            requestAnimationFrame(previewLoop);
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+        }
+
+        document.getElementById('spriteUpload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = () => applyTransparency(img);
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('saveSpriteButton').addEventListener('click', () => {
+            if (!playerSprite) {
+                alert("No sprite sheet loaded to save!");
+                return;
+            }
+
+            const characterData = {
+                sprite: playerSprite.src,
+                parameters: {
+                    defaultOrientation: document.getElementById('defaultOrientation').value,
+                    transparentColor: document.getElementById('transparentColor').value,
+                    gravity: parseFloat(document.getElementById('gravity').value),
+                    zoom: parseFloat(document.getElementById('zoom').value),
+                    controls: gameEngine.player.controls,
+                    animations: gameEngine.player.animations,
+                    behaviors: gameEngine.player.behaviors
+                }
+            };
+            const jsonString = JSON.stringify(characterData);
+            const blob = new Blob([jsonString], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'sprite.sprite';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('addCustomAction').addEventListener('click', () => {
             customActionCount++;
             const actionId = `custom${customActionCount}`;
             const actionName = `Custom Action ${customActionCount}`;
-
-            player.animations[actionId] = {
-                frames: 4,
-                width: 32,
-                height: 32,
-                speed: 0.1,
-                startX: 0,
-                startY: 0,
-                paddingX: 0,
-                paddingY: 0
-            };
-            player.behaviors[actionId] = {
-                distanceX: 0,
-                distanceY: 0
-            };
 
             const actionGroup = document.createElement('div');
             actionGroup.className = 'action-group';
@@ -364,6 +475,7 @@
                     <h4>Behavior</h4>
                     <label>Distance X (px/frame): <input type="number" id="${actionId}DistanceX" step="0.1" value="0"></label>
                     <label>Distance Y (px/frame): <input type="number" id="${actionId}DistanceY" step="0.1" value="0"></label>
+                    <label>Repeat: <input type="checkbox" id="${actionId}Repeat"></label>
                 </div>
             `;
             document.getElementById('editorForm').insertBefore(actionGroup, document.getElementById('addCustomAction').parentElement);
@@ -371,9 +483,6 @@
             const controlGroup = document.createElement('label');
             controlGroup.innerHTML = `${actionName}: <input type="text" id="${actionId}Key" class="key-input" value="" placeholder="ex: Space">`;
             document.getElementById('customControls').appendChild(controlGroup);
-
-            player.controls[actionId] = '';
-            keys[actionId] = false;
 
             const header = actionGroup.querySelector('.action-header');
             const toggleBtn = header.querySelector('.toggle-btn');
@@ -387,9 +496,7 @@
             const nameInput = header.querySelector('.action-name');
             nameInput.addEventListener('change', () => {
                 const newName = nameInput.value.trim();
-                if (newName) {
-                    controlGroup.childNodes[0].textContent = `${newName}: `;
-                }
+                if (newName) controlGroup.childNodes[0].textContent = `${newName}: `;
             });
 
             const inputs = actionGroup.querySelectorAll('input');
@@ -399,206 +506,96 @@
             });
             document.getElementById(`${actionId}Key`).addEventListener('input', updateParameters);
             document.getElementById(`${actionId}Key`).addEventListener('change', updateParameters);
-        }
-
-        function updateParameters() {
-            const animationIds = Object.keys(player.animations);
-
-            animationIds.forEach(animId => {
-                const anim = player.animations[animId];
-                const startYInput = document.getElementById(`${animId}StartY`);
-                if (startYInput) {
-                    const parsedStartY = parseInt(startYInput.value);
-                    anim.frames = parseInt(document.getElementById(`${animId}Frames`).value) || 4;
-                    anim.width = parseInt(document.getElementById(`${animId}Width`).value) || 32;
-                    anim.height = parseInt(document.getElementById(`${animId}Height`).value) || 32;
-                    anim.speed = parseFloat(document.getElementById(`${animId}Speed`).value) || 0.1;
-                    anim.startX = parseInt(document.getElementById(`${animId}StartX`).value) || 0;
-                    anim.startY = isNaN(parsedStartY) ? (anim.startY || 0) : parsedStartY;
-                    anim.paddingX = parseInt(document.getElementById(`${animId}PaddingX`).value) || 0;
-                    anim.paddingY = parseInt(document.getElementById(`${animId}PaddingY`).value) || 0;
-
-                    player.behaviors[animId].distanceX = parseFloat(document.getElementById(`${animId}DistanceX`).value) || 0;
-                    player.behaviors[animId].distanceY = parseFloat(document.getElementById(`${animId}DistanceY`).value) || 0;
-                }
-            });
-
-            player.controls.left = document.getElementById('leftKey').value.toLowerCase() || 'arrowleft';
-            player.controls.right = document.getElementById('rightKey').value.toLowerCase() || 'arrowright';
-            player.controls.jump = document.getElementById('jumpKey').value.toLowerCase() || 'arrowup';
-            animationIds.filter(id => id.startsWith('custom')).forEach(animId => {
-                const keyInput = document.getElementById(`${animId}Key`);
-                if (keyInput) {
-                    player.controls[animId] = keyInput.value.toLowerCase() || '';
-                }
-            });
-
-            player.defaultFacingRight = document.getElementById('defaultOrientation').value === 'right';
-            player.facingRight = player.defaultFacingRight;
-            player.transparentColor = document.getElementById('transparentColor').value;
-            gravity = parseFloat(document.getElementById('gravity').value) || 0.5;
-            player.zoom = parseFloat(document.getElementById('zoom').value) || 1.0;
-
-            if (player.originalSprite) {
-                applyTransparency(player.originalSprite);
-            }
-        }
-
-        function applyTransparency(img) {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = img.width;
-            tempCanvas.height = img.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(img, 0, 0);
-
-            const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
-            const data = imageData.data;
-            const transparentRGB = hexToRgb(player.transparentColor);
-
-            for (let i = 0; i < data.length; i += 4) {
-                const rDiff = Math.abs(data[i] - transparentRGB.r);
-                const gDiff = Math.abs(data[i + 1] - transparentRGB.g);
-                const bDiff = Math.abs(data[i + 2] - transparentRGB.b);
-                if (rDiff <= transparencyTolerance && gDiff <= transparencyTolerance && bDiff <= transparencyTolerance) {
-                    data[i + 3] = 0;
-                }
-            }
-
-            tempCtx.putImageData(imageData, 0, 0);
-
-            player.sprite = new Image();
-            player.sprite.onload = function() {
-                previewCanvas.width = img.width;
-                previewCanvas.height = img.height;
-                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-                previewCtx.drawImage(player.sprite, 0, 0);
-            };
-            player.sprite.src = tempCanvas.toDataURL();
-            player.width = player.animations.idle.width;
-            player.height = player.animations.idle.height;
-        }
-
-        document.getElementById('saveSpriteButton').addEventListener('click', () => {
-            if (!player.originalSprite) {
-                alert("No sprite sheet loaded to save!");
-                return;
-            }
-
-            const characterData = {
-                sprite: player.originalSprite.src,
-                parameters: {
-                    defaultOrientation: document.getElementById('defaultOrientation').value,
-                    transparentColor: player.transparentColor,
-                    gravity: gravity,
-                    zoom: player.zoom,
-                    controls: player.controls,
-                    animations: player.animations,
-                    behaviors: player.behaviors
-                }
-            };
-
-            const jsonString = JSON.stringify(characterData);
-            const blob = new Blob([jsonString], { type: 'application/octet-stream' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'sprite.sprite';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
         });
 
-        document.getElementById('spriteUpload').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        player.originalSprite = img;
-                        applyTransparency(img);
-                    };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
+        document.querySelectorAll('.action-header').forEach(header => {
+            if (!header.querySelector('.action-name')) {
+                header.addEventListener('click', () => {
+                    const actionGroup = header.parentElement;
+                    const toggleBtn = header.querySelector('.toggle-btn');
+                    actionGroup.classList.toggle('collapsed');
+                    toggleBtn.textContent = actionGroup.classList.contains('collapsed') ? '+' : '-';
+                });
             }
         });
 
+        previewCanvas.addEventListener('click', (e) => {
+            if (!playerSprite) return;
+
+            const rect = previewCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const tempCtx = document.createElement('canvas').getContext('2d');
+            tempCtx.drawImage(playerSprite, 0, 0);
+            const pixelData = tempCtx.getImageData(x, y, 1, 1).data;
+            const hexColor = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
+
+            document.getElementById('transparentColor').value = hexColor;
+            applyTransparency(playerSprite);
+        });
+
+        const inputs = document.querySelectorAll('#editorForm input, #editorForm select');
+        inputs.forEach(input => {
+            if (input.id !== 'spriteUpload') {
+                input.addEventListener('input', updateParameters);
+                input.addEventListener('change', updateParameters);
+            }
+        });
+
+        // Charger les données depuis localStorage au démarrage
         const loadedSprite = localStorage.getItem('loadedSprite');
         if (loadedSprite) {
             try {
                 const characterData = JSON.parse(loadedSprite);
+                characterData.parameters = characterData.parameters || {};
+                characterData.parameters.animations = characterData.parameters.animations || {
+                    idle: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 0, paddingX: 0, paddingY: 0 },
+                    walk: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 32, paddingX: 0, paddingY: 0 },
+                    jump: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 64, paddingX: 0, paddingY: 0 }
+                };
+                characterData.parameters.behaviors = characterData.parameters.behaviors || {
+                    idle: { distanceX: 0, distanceY: 0 },
+                    walk: { distanceX: 5, distanceY: 0 },
+                    jump: { distanceX: 0, distanceY: -10 }
+                };
+                characterData.parameters.controls = characterData.parameters.controls || {
+                    left: 'arrowleft',
+                    right: 'arrowright',
+                    jump: 'arrowup'
+                };
+
+                initializeEngine(characterData);
+
                 const img = new Image();
-                img.onload = function() {
-                    player.originalSprite = img;
+                img.onload = () => {
                     applyTransparency(img);
 
                     document.getElementById('defaultOrientation').value = characterData.parameters.defaultOrientation || 'right';
-                    player.defaultFacingRight = characterData.parameters.defaultOrientation === 'right';
-                    player.facingRight = player.defaultFacingRight;
                     document.getElementById('transparentColor').value = characterData.parameters.transparentColor || '#FFFFFF';
-                    player.transparentColor = characterData.parameters.transparentColor || '#FFFFFF';
                     document.getElementById('gravity').value = characterData.parameters.gravity || 0.5;
-                    gravity = characterData.parameters.gravity || 0.5;
                     document.getElementById('zoom').value = characterData.parameters.zoom || 1.0;
-                    player.zoom = characterData.parameters.zoom || 1.0;
+                    document.getElementById('leftKey').value = characterData.parameters.controls.left || 'ArrowLeft';
+                    document.getElementById('rightKey').value = characterData.parameters.controls.right || 'ArrowRight';
+                    document.getElementById('jumpKey').value = characterData.parameters.controls.jump || 'ArrowUp';
 
-                    player.controls = characterData.parameters.controls || {
-                        left: 'arrowleft',
-                        right: 'arrowright',
-                        jump: 'arrowup'
-                    };
-                    document.getElementById('leftKey').value = player.controls.left || 'ArrowLeft';
-                    document.getElementById('rightKey').value = player.controls.right || 'ArrowRight';
-                    document.getElementById('jumpKey').value = player.controls.jump || 'ArrowUp';
+                    ['idle', 'walk', 'jump'].forEach(animId => {
+                        const anim = characterData.parameters.animations[animId] || {};
+                        document.getElementById(`${animId}Frames`).value = anim.frames || 4;
+                        document.getElementById(`${animId}Width`).value = anim.width || 32;
+                        document.getElementById(`${animId}Height`).value = anim.height || 32;
+                        document.getElementById(`${animId}Speed`).value = anim.speed || 0.1;
+                        document.getElementById(`${animId}StartX`).value = anim.startX || 0;
+                        document.getElementById(`${animId}StartY`).value = anim.startY || 0;
+                        document.getElementById(`${animId}PaddingX`).value = anim.paddingX || 0;
+                        document.getElementById(`${animId}PaddingY`).value = anim.paddingY || 0;
 
-                    player.animations = characterData.parameters.animations || {
-                        idle: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 0, paddingX: 0, paddingY: 0 },
-                        walk: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 32, paddingX: 0, paddingY: 0 },
-                        jump: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 64, paddingX: 0, paddingY: 0 }
-                    };
-                    document.getElementById('idleFrames').value = player.animations.idle.frames;
-                    document.getElementById('idleWidth').value = player.animations.idle.width;
-                    document.getElementById('idleHeight').value = player.animations.idle.height;
-                    document.getElementById('idleSpeed').value = player.animations.idle.speed;
-                    document.getElementById('idleStartX').value = player.animations.idle.startX;
-                    document.getElementById('idleStartY').value = player.animations.idle.startY;
-                    document.getElementById('idlePaddingX').value = player.animations.idle.paddingX;
-                    document.getElementById('idlePaddingY').value = player.animations.idle.paddingY;
+                        const behavior = characterData.parameters.behaviors[animId] || {};
+                        document.getElementById(`${animId}DistanceX`).value = behavior.distanceX || 0;
+                        document.getElementById(`${animId}DistanceY`).value = behavior.distanceY || 0;
+                    });
 
-                    document.getElementById('walkFrames').value = player.animations.walk.frames;
-                    document.getElementById('walkWidth').value = player.animations.walk.width;
-                    document.getElementById('walkHeight').value = player.animations.walk.height;
-                    document.getElementById('walkSpeed').value = player.animations.walk.speed;
-                    document.getElementById('walkStartX').value = player.animations.walk.startX;
-                    document.getElementById('walkStartY').value = player.animations.walk.startY;
-                    document.getElementById('walkPaddingX').value = player.animations.walk.paddingX;
-                    document.getElementById('walkPaddingY').value = player.animations.walk.paddingY;
-
-                    document.getElementById('jumpFrames').value = player.animations.jump.frames;
-                    document.getElementById('jumpWidth').value = player.animations.jump.width;
-                    document.getElementById('jumpHeight').value = player.animations.jump.height;
-                    document.getElementById('jumpSpeed').value = player.animations.jump.speed;
-                    document.getElementById('jumpStartX').value = player.animations.jump.startX;
-                    document.getElementById('jumpStartY').value = player.animations.jump.startY;
-                    document.getElementById('jumpPaddingX').value = player.animations.jump.paddingX;
-                    document.getElementById('jumpPaddingY').value = player.animations.jump.paddingY;
-
-                    player.behaviors = characterData.parameters.behaviors || {
-                        idle: { distanceX: 0, distanceY: 0 },
-                        walk: { distanceX: 5, distanceY: 0 },
-                        jump: { distanceX: 0, distanceY: -10 }
-                    };
-                    document.getElementById('idleDistanceX').value = player.behaviors.idle.distanceX || 0;
-                    document.getElementById('idleDistanceY').value = player.behaviors.idle.distanceY || 0;
-                    document.getElementById('walkDistanceX').value = player.behaviors.walk.distanceX || 5;
-                    document.getElementById('walkDistanceY').value = player.behaviors.walk.distanceY || 0;
-                    document.getElementById('jumpDistanceX').value = player.behaviors.jump.distanceX || 0;
-                    document.getElementById('jumpDistanceY').value = player.behaviors.jump.distanceY || -10;
-
-                    // Charger les actions personnalisées si elles existent
-                    Object.keys(player.animations).filter(id => id.startsWith('custom')).forEach(animId => {
+                    Object.keys(characterData.parameters.animations).filter(id => id.startsWith('custom')).forEach(animId => {
+                        customActionCount++;
                         const actionGroup = document.createElement('div');
                         actionGroup.className = 'action-group';
                         actionGroup.innerHTML = `
@@ -608,25 +605,26 @@
                             </div>
                             <div class="sub-section">
                                 <h4>Animation</h4>
-                                <label>Frames: <input type="number" id="${animId}Frames" min="1" value="${player.animations[animId].frames}"></label>
-                                <label>Width (px): <input type="number" id="${animId}Width" min="1" value="${player.animations[animId].width}"></label>
-                                <label>Height (px): <input type="number" id="${animId}Height" min="1" value="${player.animations[animId].height}"></label>
-                                <label>Speed (s): <input type="number" id="${animId}Speed" min="0.01" step="0.01" value="${player.animations[animId].speed}"></label>
-                                <label>Start X: <input type="number" id="${animId}StartX" min="0" value="${player.animations[animId].startX}"></label>
-                                <label>Start Y: <input type="number" id="${animId}StartY" min="0" value="${player.animations[animId].startY}"></label>
-                                <label>Padding X (px): <input type="number" id="${animId}PaddingX" min="0" value="${player.animations[animId].paddingX}"></label>
-                                <label>Padding Y (px): <input type="number" id="${animId}PaddingY" min="0" value="${player.animations[animId].paddingY}"></label>
+                                <label>Frames: <input type="number" id="${animId}Frames" min="1" value="${characterData.parameters.animations[animId].frames}"></label>
+                                <label>Width (px): <input type="number" id="${animId}Width" min="1" value="${characterData.parameters.animations[animId].width}"></label>
+                                <label>Height (px): <input type="number" id="${animId}Height" min="1" value="${characterData.parameters.animations[animId].height}"></label>
+                                <label>Speed (s): <input type="number" id="${animId}Speed" min="0.01" step="0.01" value="${characterData.parameters.animations[animId].speed}"></label>
+                                <label>Start X: <input type="number" id="${animId}StartX" min="0" value="${characterData.parameters.animations[animId].startX}"></label>
+                                <label>Start Y: <input type="number" id="${animId}StartY" min="0" value="${characterData.parameters.animations[animId].startY}"></label>
+                                <label>Padding X (px): <input type="number" id="${animId}PaddingX" min="0" value="${characterData.parameters.animations[animId].paddingX}"></label>
+                                <label>Padding Y (px): <input type="number" id="${animId}PaddingY" min="0" value="${characterData.parameters.animations[animId].paddingY}"></label>
                             </div>
                             <div class="sub-section">
                                 <h4>Behavior</h4>
-                                <label>Distance X (px/frame): <input type="number" id="${animId}DistanceX" step="0.1" value="${player.behaviors[animId].distanceX}"></label>
-                                <label>Distance Y (px/frame): <input type="number" id="${animId}DistanceY" step="0.1" value="${player.behaviors[animId].distanceY}"></label>
+                                <label>Distance X (px/frame): <input type="number" id="${animId}DistanceX" step="0.1" value="${characterData.parameters.behaviors[animId].distanceX}"></label>
+                                <label>Distance Y (px/frame): <input type="number" id="${animId}DistanceY" step="0.1" value="${characterData.parameters.behaviors[animId].distanceY}"></label>
+                                <label>Repeat: <input type="checkbox" id="${animId}Repeat" ${characterData.parameters.behaviors[animId].repeat ? 'checked' : ''}></label>
                             </div>
                         `;
                         document.getElementById('editorForm').insertBefore(actionGroup, document.getElementById('addCustomAction').parentElement);
 
                         const controlGroup = document.createElement('label');
-                        controlGroup.innerHTML = `${animId}: <input type="text" id="${animId}Key" class="key-input" value="${player.controls[animId] || ''}" placeholder="ex: Space">`;
+                        controlGroup.innerHTML = `${animId}: <input type="text" id="${animId}Key" class="key-input" value="${characterData.parameters.controls[animId] || ''}" placeholder="ex: Space">`;
                         document.getElementById('customControls').appendChild(controlGroup);
 
                         const header = actionGroup.querySelector('.action-header');
@@ -641,9 +639,7 @@
                         const nameInput = header.querySelector('.action-name');
                         nameInput.addEventListener('change', () => {
                             const newName = nameInput.value.trim();
-                            if (newName) {
-                                controlGroup.childNodes[0].textContent = `${newName}: `;
-                            }
+                            if (newName) controlGroup.childNodes[0].textContent = `${newName}: `;
                         });
 
                         const inputs = actionGroup.querySelectorAll('input');
@@ -653,241 +649,45 @@
                         });
                         document.getElementById(`${animId}Key`).addEventListener('input', updateParameters);
                         document.getElementById(`${animId}Key`).addEventListener('change', updateParameters);
-
-                        keys[animId] = false;
                     });
                 };
                 img.src = characterData.sprite;
                 localStorage.removeItem('loadedSprite');
             } catch (e) {
                 console.error("Error parsing loaded sprite:", e);
+                initializeEngine();
             }
+        } else {
+            initializeEngine();
         }
 
-        document.querySelectorAll('.action-header').forEach(header => {
-            if (!header.querySelector('.action-name')) { // Ne pas ajouter deux fois pour les customs
-                header.addEventListener('click', () => {
-                    const actionGroup = header.parentElement;
-                    const toggleBtn = header.querySelector('.toggle-btn');
-                    actionGroup.classList.toggle('collapsed');
-                    toggleBtn.textContent = actionGroup.classList.contains('collapsed') ? '+' : '-';
-                });
+        // Gestionnaire pour le bouton Play
+        document.getElementById('playButton').addEventListener('click', () => {
+            if (!playerSprite) {
+                alert("No sprite loaded! Please upload or load a sprite first.");
+                return;
             }
+
+            // Créer les données du sprite actuel
+            const characterData = {
+                sprite: playerSprite.src,
+                parameters: {
+                    defaultOrientation: document.getElementById('defaultOrientation').value,
+                    transparentColor: document.getElementById('transparentColor').value,
+                    gravity: parseFloat(document.getElementById('gravity').value),
+                    zoom: parseFloat(document.getElementById('zoom').value),
+                    controls: gameEngine.player.controls,
+                    animations: gameEngine.player.animations,
+                    behaviors: gameEngine.player.behaviors
+                }
+            };
+
+            // Stocker les données dans localStorage
+            localStorage.setItem('currentSpriteData', JSON.stringify(characterData));
+
+            // Rediriger vers playground.html
+            window.location.href = 'playground.html';
         });
-
-        previewCanvas.addEventListener('click', (e) => {
-            if (!player.sprite) return;
-
-            const rect = previewCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const tempCtx = document.createElement('canvas').getContext('2d');
-            tempCtx.drawImage(player.originalSprite, 0, 0);
-            const pixelData = tempCtx.getImageData(x, y, 1, 1).data;
-            const hexColor = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
-
-            document.getElementById('transparentColor').value = hexColor;
-            player.transparentColor = hexColor;
-            applyTransparency(player.originalSprite);
-        });
-
-        const inputs = document.querySelectorAll('#editorForm input, #editorForm select');
-        inputs.forEach(input => {
-            if (input.id !== 'spriteUpload') {
-                input.addEventListener('input', updateParameters);
-                input.addEventListener('change', updateParameters);
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            const key = e.key.toLowerCase();
-            if (key === player.controls.left.toLowerCase()) keys.left = true;
-            if (key === player.controls.right.toLowerCase()) keys.right = true;
-            if (key === player.controls.jump.toLowerCase() && !keys.jumpPressed) {
-                keys.jump = true;
-                keys.jumpPressed = true;
-            }
-            Object.keys(player.controls).filter(id => id.startsWith('custom')).forEach(animId => {
-                if (key === player.controls[animId] && !keys[animId]) {
-                    keys[animId] = true;
-                }
-            });
-        });
-
-        document.addEventListener('keyup', (e) => {
-            const key = e.key.toLowerCase();
-            if (key === player.controls.left.toLowerCase()) keys.left = false;
-            if (key === player.controls.right.toLowerCase()) keys.right = false;
-            if (key === player.controls.jump.toLowerCase()) {
-                keys.jump = false;
-                keys.jumpPressed = false;
-            }
-            Object.keys(player.controls).filter(id => id.startsWith('custom')).forEach(animId => {
-                if (key === player.controls[animId]) {
-                    keys[animId] = false;
-                }
-            });
-        });
-
-        document.getElementById('addCustomAction').addEventListener('click', addCustomAction);
-
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
-            } : null;
-        }
-
-        function rgbToHex(r, g, b) {
-            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-        }
-
-        function updateAnimation(delta) {
-            const anim = player.animations[player.currentAnimation];
-
-            if (player.jumping) {
-                player.currentAnimation = 'jump';
-            } else if (keys.left || keys.right) {
-                player.currentAnimation = 'walk';
-            } else {
-                let customTriggered = false;
-                for (const animId of Object.keys(player.controls).filter(id => id.startsWith('custom'))) {
-                    if (keys[animId]) {
-                        player.currentAnimation = animId;
-                        customTriggered = true;
-                        break;
-                    }
-                }
-                if (!customTriggered) {
-                    player.currentAnimation = 'idle';
-                }
-            }
-
-            player.frameTimer += delta;
-            if (player.frameTimer >= anim.speed) {
-                player.currentFrame = (player.currentFrame + 1) % anim.frames;
-                if (player.currentFrame >= anim.frames) {
-                    player.currentFrame = anim.frames - 1;
-                }
-                player.frameTimer = 0;
-            }
-
-            player.width = anim.width;
-            player.height = anim.height;
-        }
-
-        function updatePreview() {
-            if (!player.sprite) return;
-
-            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-            previewCtx.drawImage(player.sprite, 0, 0);
-
-            const anim = player.animations[player.currentAnimation];
-            const limitedFrame = Math.min(player.currentFrame, anim.frames - 1);
-            const frameX = anim.startX + limitedFrame * (anim.width + anim.paddingX);
-            const frameY = anim.startY;
-
-            previewCtx.strokeStyle = 'red';
-            previewCtx.lineWidth = 2;
-            previewCtx.strokeRect(frameX, frameY, anim.width, anim.height);
-        }
-
-        function gameLoop(timestamp) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            updateAnimation(player.speed / 60);
-
-            const currentBehavior = player.behaviors[player.currentAnimation];
-
-            let totalDistanceX = 0;
-            const walkDistanceX = player.behaviors.walk.distanceX;
-            if (keys.left && player.x > 0) {
-                totalDistanceX -= walkDistanceX;
-                player.facingRight = false;
-            }
-            if (keys.right && player.x < canvas.width - (player.width * player.zoom)) {
-                totalDistanceX += walkDistanceX;
-                player.facingRight = true;
-            }
-            if (player.currentAnimation === 'idle' || player.currentAnimation === 'jump') {
-                totalDistanceX += currentBehavior.distanceX;
-            }
-            player.x += totalDistanceX;
-
-            if (keys.jump && !player.jumping) {
-                player.velocityY = player.behaviors.jump.distanceY;
-                player.jumping = true;
-            }
-
-            if (player.jumping) {
-                player.velocityY += gravity;
-                player.y += player.velocityY;
-            } else {
-                player.velocityY += gravity;
-                player.y += player.velocityY + currentBehavior.distanceY;
-            }
-
-            if (player.y > canvas.height - (player.height * player.zoom)) {
-                player.y = canvas.height - (player.height * player.zoom);
-                player.velocityY = 0;
-                player.jumping = false;
-            }
-
-            if (player.y < 0) {
-                player.y = 0;
-                player.velocityY = 0;
-            }
-
-            if (player.x < 0) {
-                player.x = 0;
-            }
-            if (player.x > canvas.width - (player.width * player.zoom)) {
-                player.x = canvas.width - (player.width * player.zoom);
-            }
-
-            updatePreview();
-
-            if (player.sprite) {
-                const anim = player.animations[player.currentAnimation];
-                const limitedFrame = Math.min(player.currentFrame, anim.frames - 1);
-                const frameX = anim.startX + limitedFrame * (anim.width + anim.paddingX);
-                const frameY = anim.startY;
-
-                ctx.save();
-                
-                const shouldMirror = player.facingRight !== player.defaultFacingRight;
-                if (shouldMirror) {
-                    ctx.scale(-1, 1);
-                    ctx.translate(-canvas.width, 0);
-                    ctx.drawImage(
-                        player.sprite,
-                        frameX, frameY,
-                        anim.width, anim.height,
-                        canvas.width - player.x - (anim.width * player.zoom), player.y,
-                        anim.width * player.zoom, anim.height * player.zoom
-                    );
-                } else {
-                    ctx.drawImage(
-                        player.sprite,
-                        frameX, frameY,
-                        anim.width, anim.height,
-                        player.x, player.y,
-                        anim.width * player.zoom, anim.height * player.zoom
-                    );
-                }
-                
-                ctx.restore();
-            } else {
-                ctx.fillStyle = 'red';
-                ctx.fillRect(player.x, player.y, player.width * player.zoom, player.height * player.zoom);
-            }
-
-            requestAnimationFrame(gameLoop);
-        }
-
-        requestAnimationFrame(gameLoop);
     </script>
 </body>
 </html>

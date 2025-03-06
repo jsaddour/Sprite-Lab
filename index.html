@@ -4,32 +4,33 @@
     <meta charset="UTF-8">
     <title>Sprite Lab - Home</title>
     <style>
+        /* Le CSS reste identique */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #1A3C34; /* Vert foncé */
+            background-color: #1A3C34;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
         }
         .container {
-            background: #F5F5F5; /* Blanc cassé */
+            background: #F5F5F5;
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             text-align: center;
             width: 350px;
-            border: 2px solid #2E7D32; /* Vert bordure */
+            border: 2px solid #2E7D32;
         }
         h1 {
-            color: #A5D6A7; /* Vert clair */
+            color: #A5D6A7;
             margin-bottom: 20px;
             font-size: 28px;
         }
         button {
-            background: #2E7D32; /* Vert moyen */
+            background: #2E7D32;
             color: white;
             border: none;
             padding: 12px 20px;
@@ -40,7 +41,7 @@
             transition: background 0.3s;
         }
         button:hover {
-            background: #1B5E20; /* Vert foncé au survol */
+            background: #1B5E20;
         }
         select {
             padding: 12px;
@@ -86,7 +87,7 @@
     <script>
         const previewCanvas = document.getElementById('previewCanvas');
         const previewCtx = previewCanvas.getContext('2d');
-        let previewData = null; // Renommé de previewSprite à previewData
+        let previewData = null;
         let previewFrame = 0;
         let previewTimer = 0;
 
@@ -109,7 +110,7 @@
         function previewSprite(spriteUrl) {
             if (!spriteUrl) {
                 previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-                previewData = null; // Mis à jour avec previewData
+                previewData = null;
                 return;
             }
 
@@ -123,7 +124,7 @@
                     const img = new Image();
                     img.onload = function() {
                         applyPreviewTransparency(img, characterData.parameters.transparentColor);
-                        previewData = { // Mis à jour avec previewData
+                        previewData = {
                             image: img,
                             idle: characterData.parameters.animations.idle
                         };
@@ -216,8 +217,8 @@
         }
 
         function previewLoop(timestamp) {
-            if (previewData) { // Mis à jour avec previewData
-                const anim = previewData.idle; // Mis à jour avec previewData
+            if (previewData) {
+                const anim = previewData.idle;
                 previewTimer += 1 / 60;
                 if (previewTimer >= anim.speed) {
                     previewFrame = (previewFrame + 1) % anim.frames;
@@ -231,7 +232,7 @@
                 const frameX = anim.startX + Math.min(previewFrame, anim.frames - 1) * (anim.width + anim.paddingX);
                 const frameY = anim.startY;
                 previewCtx.drawImage(
-                    previewData.image, // Mis à jour avec previewData
+                    previewData.image,
                     frameX, frameY,
                     anim.width, anim.height,
                     (previewCanvas.width - anim.width) / 2, (previewCanvas.height - anim.height) / 2,
