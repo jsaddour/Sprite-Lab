@@ -1,5 +1,9 @@
 [
     {
+        "name": "Belmont",
+        "file": "belmont.sprite"
+    },
+	{
         "name": "Megaman",
         "file": "megaman.sprite"
     },
