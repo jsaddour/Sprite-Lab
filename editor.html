@@ -8,7 +8,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: #1A3C34; /* Vert foncé */
+            background-color: #1A3C34;
             min-height: 100vh;
             color: #212121;
         }
@@ -17,18 +17,18 @@
             gap: 20px;
             max-width: 1400px;
             margin: 0 auto;
-            align-items: flex-start; /* Aligne au sommet */
+            align-items: flex-start;
         }
         #editorForm {
             flex: 1;
-            background: #F5F5F5; /* Blanc cassé */
+            background: #F5F5F5;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            border: 2px solid #2E7D32; /* Vert bordure */
+            border: 2px solid #2E7D32;
             max-width: 500px;
-            overflow-y: auto; /* Scroll si le formulaire est long */
-            max-height: 80vh; /* Limite la hauteur du formulaire */
+            overflow-y: auto;
+            max-height: 80vh;
         }
         #previewContainer, #gameContainer {
             flex: 2;
@@ -39,27 +39,59 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             border: 2px solid #2E7D32;
             min-width: 400px;
-            height: auto; /* Hauteur adaptative au contenu */
-            max-height: 100%; /* Respecte la hauteur du conteneur parent */
+            height: auto;
+            max-height: 100%;
         }
         .form-group {
             margin: 15px 0;
         }
-        .animation-group {
-            border: 1px solid #A5D6A7; /* Vert clair */
+        .action-group {
+            border: 1px solid #A5D6A7;
             padding: 15px;
             border-radius: 8px;
             margin: 10px 0;
             background: #FFFFFF;
+            transition: all 0.3s;
+        }
+        .action-group.collapsed .sub-section {
+            display: none;
+        }
+        .action-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .action-header h3, .action-header input.action-name {
+            margin: 0;
+            padding: 5px;
+            font-size: 18px;
+            color: #2E7D32;
+            border: none;
+            background: transparent;
+            width: 70%;
+        }
+        .action-header input.action-name:focus {
+            outline: 1px solid #2E7D32;
+            border-radius: 4px;
+        }
+        .toggle-btn {
+            font-size: 18px;
+            font-weight: bold;
+            user-select: none;
+        }
+        .sub-section {
+            margin-left: 20px;
+            margin-top: 10px;
         }
         h1 {
-            color: #A5D6A7; /* Vert clair */
+            color: #A5D6A7;
             text-align: center;
             margin-bottom: 20px;
             font-size: 28px;
         }
         h3 {
-            color: #2E7D32; /* Vert moyen */
+            color: #2E7D32;
             margin: 10px 0;
         }
         label {
@@ -79,7 +111,7 @@
             transition: border-color 0.3s;
         }
         input[type="number"]:focus, input[type="text"]:focus, select:focus, input[type="color"]:focus {
-            border-color: #1B5E20; /* Vert foncé sur focus */
+            border-color: #1B5E20;
             outline: none;
         }
         label[for="spriteUpload"] {
@@ -88,7 +120,7 @@
             font-weight: bold;
         }
         button {
-            background: #2E7D32; /* Vert moyen */
+            background: #2E7D32;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -98,7 +130,7 @@
             transition: background 0.3s;
         }
         button:hover {
-            background: #1B5E20; /* Vert foncé au survol */
+            background: #1B5E20;
         }
         #previewCanvas, #gameCanvas {
             border: 1px solid #A5D6A7;
@@ -106,7 +138,7 @@
             background: #fff;
             max-width: 100%;
             height: auto;
-            width: 100%; /* Remplit le conteneur */
+            width: 100%;
         }
         small {
             color: #757575;
@@ -153,42 +185,80 @@
                 <label>Move Left: <input type="text" id="leftKey" class="key-input" value="ArrowLeft" placeholder="ex: ArrowLeft"></label>
                 <label>Move Right: <input type="text" id="rightKey" class="key-input" value="ArrowRight" placeholder="ex: ArrowRight"></label>
                 <label>Jump: <input type="text" id="jumpKey" class="key-input" value="ArrowUp" placeholder="ex: ArrowUp"></label>
+                <div id="customControls"></div>
             </div>
 
-            <div class="animation-group">
-                <h3>Idle Animation</h3>
-                <label>Frames: <input type="number" id="idleFrames" min="1" value="4"></label>
-                <label>Width (px): <input type="number" id="idleWidth" min="1" value="32"></label>
-                <label>Height (px): <input type="number" id="idleHeight" min="1" value="32"></label>
-                <label>Speed (s): <input type="number" id="idleSpeed" min="0.01" step="0.01" value="0.1"></label>
-                <label>Start X: <input type="number" id="idleStartX" min="0" value="0"></label>
-                <label>Start Y: <input type="number" id="idleStartY" min="0" value="0"></label>
-                <label>Padding X (px): <input type="number" id="idlePaddingX" min="0" value="0"></label>
-                <label>Padding Y (px): <input type="number" id="idlePaddingY" min="0" value="0"></label>
+            <div class="action-group">
+                <div class="action-header" data-action="idle">
+                    <h3>Idle Action</h3>
+                    <span class="toggle-btn">-</span>
+                </div>
+                <div class="sub-section">
+                    <h4>Animation</h4>
+                    <label>Frames: <input type="number" id="idleFrames" min="1" value="4"></label>
+                    <label>Width (px): <input type="number" id="idleWidth" min="1" value="32"></label>
+                    <label>Height (px): <input type="number" id="idleHeight" min="1" value="32"></label>
+                    <label>Speed (s): <input type="number" id="idleSpeed" min="0.01" step="0.01" value="0.1"></label>
+                    <label>Start X: <input type="number" id="idleStartX" min="0" value="0"></label>
+                    <label>Start Y: <input type="number" id="idleStartY" min="0" value="0"></label>
+                    <label>Padding X (px): <input type="number" id="idlePaddingX" min="0" value="0"></label>
+                    <label>Padding Y (px): <input type="number" id="idlePaddingY" min="0" value="0"></label>
+                </div>
+                <div class="sub-section">
+                    <h4>Behavior</h4>
+                    <label>Distance X (px/frame): <input type="number" id="idleDistanceX" step="0.1" value="0"></label>
+                    <label>Distance Y (px/frame): <input type="number" id="idleDistanceY" step="0.1" value="0"></label>
+                </div>
             </div>
 
-            <div class="animation-group">
-                <h3>Walk Animation</h3>
-                <label>Frames: <input type="number" id="walkFrames" min="1" value="4"></label>
-                <label>Width (px): <input type="number" id="walkWidth" min="1" value="32"></label>
-                <label>Height (px): <input type="number" id="walkHeight" min="1" value="32"></label>
-                <label>Speed (s): <input type="number" id="walkSpeed" min="0.01" step="0.01" value="0.1"></label>
-                <label>Start X: <input type="number" id="walkStartX" min="0" value="0"></label>
-                <label>Start Y: <input type="number" id="walkStartY" min="0" value="32"></label>
-                <label>Padding X (px): <input type="number" id="walkPaddingX" min="0" value="0"></label>
-                <label>Padding Y (px): <input type="number" id="walkPaddingY" min="0" value="0"></label>
+            <div class="action-group collapsed">
+                <div class="action-header" data-action="walk">
+                    <h3>Walk Action</h3>
+                    <span class="toggle-btn">+</span>
+                </div>
+                <div class="sub-section">
+                    <h4>Animation</h4>
+                    <label>Frames: <input type="number" id="walkFrames" min="1" value="4"></label>
+                    <label>Width (px): <input type="number" id="walkWidth" min="1" value="32"></label>
+                    <label>Height (px): <input type="number" id="walkHeight" min="1" value="32"></label>
+                    <label>Speed (s): <input type="number" id="walkSpeed" min="0.01" step="0.01" value="0.1"></label>
+                    <label>Start X: <input type="number" id="walkStartX" min="0" value="0"></label>
+                    <label>Start Y: <input type="number" id="walkStartY" min="0" value="32"></label>
+                    <label>Padding X (px): <input type="number" id="walkPaddingX" min="0" value="0"></label>
+                    <label>Padding Y (px): <input type="number" id="walkPaddingY" min="0" value="0"></label>
+                </div>
+                <div class="sub-section">
+                    <h4>Behavior</h4>
+                    <label>Distance X (px/frame): <input type="number" id="walkDistanceX" min="0.1" step="0.1" value="5"></label>
+                    <label>Distance Y (px/frame): <input type="number" id="walkDistanceY" step="0.1" value="0"></label>
+                </div>
             </div>
 
-            <div class="animation-group">
-                <h3>Jump Animation</h3>
-                <label>Frames: <input type="number" id="jumpFrames" min="1" value="4"></label>
-                <label>Width (px): <input type="number" id="jumpWidth" min="1" value="32"></label>
-                <label>Height (px): <input type="number" id="jumpHeight" min="1" value="32"></label>
-                <label>Speed (s): <input type="number" id="jumpSpeed" min="0.01" step="0.01" value="0.1"></label>
-                <label>Start X: <input type="number" id="jumpStartX" min="0" value="0"></label>
-                <label>Start Y: <input type="number" id="jumpStartY" min="0" value="64"></label>
-                <label>Padding X (px): <input type="number" id="jumpPaddingX" min="0" value="0"></label>
-                <label>Padding Y (px): <input type="number" id="jumpPaddingY" min="0" value="0"></label>
+            <div class="action-group collapsed">
+                <div class="action-header" data-action="jump">
+                    <h3>Jump Action</h3>
+                    <span class="toggle-btn">+</span>
+                </div>
+                <div class="sub-section">
+                    <h4>Animation</h4>
+                    <label>Frames: <input type="number" id="jumpFrames" min="1" value="4"></label>
+                    <label>Width (px): <input type="number" id="jumpWidth" min="1" value="32"></label>
+                    <label>Height (px): <input type="number" id="jumpHeight" min="1" value="32"></label>
+                    <label>Speed (s): <input type="number" id="jumpSpeed" min="0.01" step="0.01" value="0.1"></label>
+                    <label>Start X: <input type="number" id="jumpStartX" min="0" value="0"></label>
+                    <label>Start Y: <input type="number" id="jumpStartY" min="0" value="64"></label>
+                    <label>Padding X (px): <input type="number" id="jumpPaddingX" min="0" value="0"></label>
+                    <label>Padding Y (px): <input type="number" id="jumpPaddingY" min="0" value="0"></label>
+                </div>
+                <div class="sub-section">
+                    <h4>Behavior</h4>
+                    <label>Distance X (px/frame): <input type="number" id="jumpDistanceX" step="0.1" value="0"></label>
+                    <label>Distance Y (px/frame): <input type="number" id="jumpDistanceY" step="0.1" value="-10"></label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <button type="button" id="addCustomAction">Add Custom Action</button>
             </div>
         </form>
 
@@ -233,40 +303,134 @@
                 idle: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 0, paddingX: 0, paddingY: 0 },
                 walk: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 32, paddingX: 0, paddingY: 0 },
                 jump: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 64, paddingX: 0, paddingY: 0 }
+            },
+            behaviors: {
+                idle: { distanceX: 0, distanceY: 0 },
+                walk: { distanceX: 5, distanceY: 0 },
+                jump: { distanceX: 0, distanceY: -10 }
             }
         };
 
         const keys = {
             left: false,
             right: false,
-            jump: false
+            jump: false,
+            jumpPressed: false
         };
 
         let gravity = 0.5;
-        const jumpForce = -10;
         const transparencyTolerance = 20;
+        let customActionCount = 0;
+
+        function addCustomAction() {
+            customActionCount++;
+            const actionId = `custom${customActionCount}`;
+            const actionName = `Custom Action ${customActionCount}`;
+
+            player.animations[actionId] = {
+                frames: 4,
+                width: 32,
+                height: 32,
+                speed: 0.1,
+                startX: 0,
+                startY: 0,
+                paddingX: 0,
+                paddingY: 0
+            };
+            player.behaviors[actionId] = {
+                distanceX: 0,
+                distanceY: 0
+            };
+
+            const actionGroup = document.createElement('div');
+            actionGroup.className = 'action-group';
+            actionGroup.innerHTML = `
+                <div class="action-header" data-action="${actionId}">
+                    <input type="text" class="action-name" value="${actionName}">
+                    <span class="toggle-btn">-</span>
+                </div>
+                <div class="sub-section">
+                    <h4>Animation</h4>
+                    <label>Frames: <input type="number" id="${actionId}Frames" min="1" value="4"></label>
+                    <label>Width (px): <input type="number" id="${actionId}Width" min="1" value="32"></label>
+                    <label>Height (px): <input type="number" id="${actionId}Height" min="1" value="32"></label>
+                    <label>Speed (s): <input type="number" id="${actionId}Speed" min="0.01" step="0.01" value="0.1"></label>
+                    <label>Start X: <input type="number" id="${actionId}StartX" min="0" value="0"></label>
+                    <label>Start Y: <input type="number" id="${actionId}StartY" min="0" value="0"></label>
+                    <label>Padding X (px): <input type="number" id="${actionId}PaddingX" min="0" value="0"></label>
+                    <label>Padding Y (px): <input type="number" id="${actionId}PaddingY" min="0" value="0"></label>
+                </div>
+                <div class="sub-section">
+                    <h4>Behavior</h4>
+                    <label>Distance X (px/frame): <input type="number" id="${actionId}DistanceX" step="0.1" value="0"></label>
+                    <label>Distance Y (px/frame): <input type="number" id="${actionId}DistanceY" step="0.1" value="0"></label>
+                </div>
+            `;
+            document.getElementById('editorForm').insertBefore(actionGroup, document.getElementById('addCustomAction').parentElement);
+
+            const controlGroup = document.createElement('label');
+            controlGroup.innerHTML = `${actionName}: <input type="text" id="${actionId}Key" class="key-input" value="" placeholder="ex: Space">`;
+            document.getElementById('customControls').appendChild(controlGroup);
+
+            player.controls[actionId] = '';
+            keys[actionId] = false;
+
+            const header = actionGroup.querySelector('.action-header');
+            const toggleBtn = header.querySelector('.toggle-btn');
+            header.addEventListener('click', (e) => {
+                if (e.target !== header.querySelector('.action-name')) {
+                    actionGroup.classList.toggle('collapsed');
+                    toggleBtn.textContent = actionGroup.classList.contains('collapsed') ? '+' : '-';
+                }
+            });
+
+            const nameInput = header.querySelector('.action-name');
+            nameInput.addEventListener('change', () => {
+                const newName = nameInput.value.trim();
+                if (newName) {
+                    controlGroup.childNodes[0].textContent = `${newName}: `;
+                }
+            });
+
+            const inputs = actionGroup.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('input', updateParameters);
+                input.addEventListener('change', updateParameters);
+            });
+            document.getElementById(`${actionId}Key`).addEventListener('input', updateParameters);
+            document.getElementById(`${actionId}Key`).addEventListener('change', updateParameters);
+        }
 
         function updateParameters() {
-            const animationIds = ['idle', 'walk', 'jump']; // Liste extensible des animations
+            const animationIds = Object.keys(player.animations);
 
             animationIds.forEach(animId => {
-                const prefix = animId.charAt(0).toUpperCase() + animId.slice(1);
                 const anim = player.animations[animId];
-                const startYInput = document.getElementById(`${animId}StartY`).value;
-                const parsedStartY = parseInt(startYInput);
+                const startYInput = document.getElementById(`${animId}StartY`);
+                if (startYInput) {
+                    const parsedStartY = parseInt(startYInput.value);
+                    anim.frames = parseInt(document.getElementById(`${animId}Frames`).value) || 4;
+                    anim.width = parseInt(document.getElementById(`${animId}Width`).value) || 32;
+                    anim.height = parseInt(document.getElementById(`${animId}Height`).value) || 32;
+                    anim.speed = parseFloat(document.getElementById(`${animId}Speed`).value) || 0.1;
+                    anim.startX = parseInt(document.getElementById(`${animId}StartX`).value) || 0;
+                    anim.startY = isNaN(parsedStartY) ? (anim.startY || 0) : parsedStartY;
+                    anim.paddingX = parseInt(document.getElementById(`${animId}PaddingX`).value) || 0;
+                    anim.paddingY = parseInt(document.getElementById(`${animId}PaddingY`).value) || 0;
 
-                console.log(`Updating ${animId} - StartY Input: ${startYInput}, Parsed: ${parsedStartY}`);
+                    player.behaviors[animId].distanceX = parseFloat(document.getElementById(`${animId}DistanceX`).value) || 0;
+                    player.behaviors[animId].distanceY = parseFloat(document.getElementById(`${animId}DistanceY`).value) || 0;
+                }
+            });
 
-                anim.frames = parseInt(document.getElementById(`${animId}Frames`).value) || 4;
-                anim.width = parseInt(document.getElementById(`${animId}Width`).value) || 32;
-                anim.height = parseInt(document.getElementById(`${animId}Height`).value) || 32;
-                anim.speed = parseFloat(document.getElementById(`${animId}Speed`).value) || 0.1;
-                anim.startX = parseInt(document.getElementById(`${animId}StartX`).value) || 0;
-                anim.startY = isNaN(parsedStartY) ? (anim.startY || 0) : parsedStartY; // Valeur par défaut basée sur l'état actuel
-                anim.paddingX = parseInt(document.getElementById(`${animId}PaddingX`).value) || 0;
-                anim.paddingY = parseInt(document.getElementById(`${animId}PaddingY`).value) || 0;
-
-                console.log(`Updated ${animId} Animation - StartY: ${anim.startY}`);
+            player.controls.left = document.getElementById('leftKey').value.toLowerCase() || 'arrowleft';
+            player.controls.right = document.getElementById('rightKey').value.toLowerCase() || 'arrowright';
+            player.controls.jump = document.getElementById('jumpKey').value.toLowerCase() || 'arrowup';
+            animationIds.filter(id => id.startsWith('custom')).forEach(animId => {
+                const keyInput = document.getElementById(`${animId}Key`);
+                if (keyInput) {
+                    player.controls[animId] = keyInput.value.toLowerCase() || '';
+                }
             });
 
             player.defaultFacingRight = document.getElementById('defaultOrientation').value === 'right';
@@ -281,7 +445,6 @@
         }
 
         function applyTransparency(img) {
-            console.log("Applying transparency with color:", player.transparentColor);
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = img.width;
             tempCanvas.height = img.height;
@@ -291,25 +454,20 @@
             const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
             const data = imageData.data;
             const transparentRGB = hexToRgb(player.transparentColor);
-            console.log("Target RGB color:", transparentRGB);
 
-            let pixelsChanged = 0;
             for (let i = 0; i < data.length; i += 4) {
                 const rDiff = Math.abs(data[i] - transparentRGB.r);
                 const gDiff = Math.abs(data[i + 1] - transparentRGB.g);
                 const bDiff = Math.abs(data[i + 2] - transparentRGB.b);
                 if (rDiff <= transparencyTolerance && gDiff <= transparencyTolerance && bDiff <= transparencyTolerance) {
                     data[i + 3] = 0;
-                    pixelsChanged++;
                 }
             }
-            console.log("Pixels made transparent:", pixelsChanged);
 
             tempCtx.putImageData(imageData, 0, 0);
 
             player.sprite = new Image();
             player.sprite.onload = function() {
-                console.log("New image loaded with transparency");
                 previewCanvas.width = img.width;
                 previewCanvas.height = img.height;
                 previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
@@ -334,7 +492,8 @@
                     gravity: gravity,
                     zoom: player.zoom,
                     controls: player.controls,
-                    animations: player.animations
+                    animations: player.animations,
+                    behaviors: player.behaviors
                 }
             };
 
@@ -348,32 +507,21 @@
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-            console.log("Sprite saved:", characterData);
         });
 
         document.getElementById('spriteUpload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                console.log("Starting upload of file:", file.name);
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const img = new Image();
                     img.onload = function() {
-                        console.log("Image loaded successfully, dimensions:", img.width, "x", img.height);
                         player.originalSprite = img;
                         applyTransparency(img);
                     };
-                    img.onerror = function() {
-                        console.error("Error loading image");
-                    };
                     img.src = event.target.result;
                 };
-                reader.onerror = function() {
-                    console.error("Error reading file");
-                };
                 reader.readAsDataURL(file);
-            } else {
-                console.error("No file selected");
             }
         });
 
@@ -383,26 +531,33 @@
                 const characterData = JSON.parse(loadedSprite);
                 const img = new Image();
                 img.onload = function() {
-                    console.log("Character loaded successfully from localStorage");
                     player.originalSprite = img;
                     applyTransparency(img);
 
-                    document.getElementById('defaultOrientation').value = characterData.parameters.defaultOrientation;
+                    document.getElementById('defaultOrientation').value = characterData.parameters.defaultOrientation || 'right';
                     player.defaultFacingRight = characterData.parameters.defaultOrientation === 'right';
                     player.facingRight = player.defaultFacingRight;
-                    document.getElementById('transparentColor').value = characterData.parameters.transparentColor;
-                    player.transparentColor = characterData.parameters.transparentColor;
-                    document.getElementById('gravity').value = characterData.parameters.gravity;
-                    gravity = characterData.parameters.gravity;
+                    document.getElementById('transparentColor').value = characterData.parameters.transparentColor || '#FFFFFF';
+                    player.transparentColor = characterData.parameters.transparentColor || '#FFFFFF';
+                    document.getElementById('gravity').value = characterData.parameters.gravity || 0.5;
+                    gravity = characterData.parameters.gravity || 0.5;
                     document.getElementById('zoom').value = characterData.parameters.zoom || 1.0;
                     player.zoom = characterData.parameters.zoom || 1.0;
 
-                    player.controls = characterData.parameters.controls;
-                    document.getElementById('leftKey').value = player.controls.left;
-                    document.getElementById('rightKey').value = player.controls.right;
-                    document.getElementById('jumpKey').value = player.controls.jump;
+                    player.controls = characterData.parameters.controls || {
+                        left: 'arrowleft',
+                        right: 'arrowright',
+                        jump: 'arrowup'
+                    };
+                    document.getElementById('leftKey').value = player.controls.left || 'ArrowLeft';
+                    document.getElementById('rightKey').value = player.controls.right || 'ArrowRight';
+                    document.getElementById('jumpKey').value = player.controls.jump || 'ArrowUp';
 
-                    player.animations = characterData.parameters.animations;
+                    player.animations = characterData.parameters.animations || {
+                        idle: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 0, paddingX: 0, paddingY: 0 },
+                        walk: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 32, paddingX: 0, paddingY: 0 },
+                        jump: { frames: 4, width: 32, height: 32, speed: 0.1, startX: 0, startY: 64, paddingX: 0, paddingY: 0 }
+                    };
                     document.getElementById('idleFrames').value = player.animations.idle.frames;
                     document.getElementById('idleWidth').value = player.animations.idle.width;
                     document.getElementById('idleHeight').value = player.animations.idle.height;
@@ -429,6 +584,78 @@
                     document.getElementById('jumpStartY').value = player.animations.jump.startY;
                     document.getElementById('jumpPaddingX').value = player.animations.jump.paddingX;
                     document.getElementById('jumpPaddingY').value = player.animations.jump.paddingY;
+
+                    player.behaviors = characterData.parameters.behaviors || {
+                        idle: { distanceX: 0, distanceY: 0 },
+                        walk: { distanceX: 5, distanceY: 0 },
+                        jump: { distanceX: 0, distanceY: -10 }
+                    };
+                    document.getElementById('idleDistanceX').value = player.behaviors.idle.distanceX || 0;
+                    document.getElementById('idleDistanceY').value = player.behaviors.idle.distanceY || 0;
+                    document.getElementById('walkDistanceX').value = player.behaviors.walk.distanceX || 5;
+                    document.getElementById('walkDistanceY').value = player.behaviors.walk.distanceY || 0;
+                    document.getElementById('jumpDistanceX').value = player.behaviors.jump.distanceX || 0;
+                    document.getElementById('jumpDistanceY').value = player.behaviors.jump.distanceY || -10;
+
+                    // Charger les actions personnalisées si elles existent
+                    Object.keys(player.animations).filter(id => id.startsWith('custom')).forEach(animId => {
+                        const actionGroup = document.createElement('div');
+                        actionGroup.className = 'action-group';
+                        actionGroup.innerHTML = `
+                            <div class="action-header" data-action="${animId}">
+                                <input type="text" class="action-name" value="${animId}">
+                                <span class="toggle-btn">-</span>
+                            </div>
+                            <div class="sub-section">
+                                <h4>Animation</h4>
+                                <label>Frames: <input type="number" id="${animId}Frames" min="1" value="${player.animations[animId].frames}"></label>
+                                <label>Width (px): <input type="number" id="${animId}Width" min="1" value="${player.animations[animId].width}"></label>
+                                <label>Height (px): <input type="number" id="${animId}Height" min="1" value="${player.animations[animId].height}"></label>
+                                <label>Speed (s): <input type="number" id="${animId}Speed" min="0.01" step="0.01" value="${player.animations[animId].speed}"></label>
+                                <label>Start X: <input type="number" id="${animId}StartX" min="0" value="${player.animations[animId].startX}"></label>
+                                <label>Start Y: <input type="number" id="${animId}StartY" min="0" value="${player.animations[animId].startY}"></label>
+                                <label>Padding X (px): <input type="number" id="${animId}PaddingX" min="0" value="${player.animations[animId].paddingX}"></label>
+                                <label>Padding Y (px): <input type="number" id="${animId}PaddingY" min="0" value="${player.animations[animId].paddingY}"></label>
+                            </div>
+                            <div class="sub-section">
+                                <h4>Behavior</h4>
+                                <label>Distance X (px/frame): <input type="number" id="${animId}DistanceX" step="0.1" value="${player.behaviors[animId].distanceX}"></label>
+                                <label>Distance Y (px/frame): <input type="number" id="${animId}DistanceY" step="0.1" value="${player.behaviors[animId].distanceY}"></label>
+                            </div>
+                        `;
+                        document.getElementById('editorForm').insertBefore(actionGroup, document.getElementById('addCustomAction').parentElement);
+
+                        const controlGroup = document.createElement('label');
+                        controlGroup.innerHTML = `${animId}: <input type="text" id="${animId}Key" class="key-input" value="${player.controls[animId] || ''}" placeholder="ex: Space">`;
+                        document.getElementById('customControls').appendChild(controlGroup);
+
+                        const header = actionGroup.querySelector('.action-header');
+                        const toggleBtn = header.querySelector('.toggle-btn');
+                        header.addEventListener('click', (e) => {
+                            if (e.target !== header.querySelector('.action-name')) {
+                                actionGroup.classList.toggle('collapsed');
+                                toggleBtn.textContent = actionGroup.classList.contains('collapsed') ? '+' : '-';
+                            }
+                        });
+
+                        const nameInput = header.querySelector('.action-name');
+                        nameInput.addEventListener('change', () => {
+                            const newName = nameInput.value.trim();
+                            if (newName) {
+                                controlGroup.childNodes[0].textContent = `${newName}: `;
+                            }
+                        });
+
+                        const inputs = actionGroup.querySelectorAll('input');
+                        inputs.forEach(input => {
+                            input.addEventListener('input', updateParameters);
+                            input.addEventListener('change', updateParameters);
+                        });
+                        document.getElementById(`${animId}Key`).addEventListener('input', updateParameters);
+                        document.getElementById(`${animId}Key`).addEventListener('change', updateParameters);
+
+                        keys[animId] = false;
+                    });
                 };
                 img.src = characterData.sprite;
                 localStorage.removeItem('loadedSprite');
@@ -436,6 +663,17 @@
                 console.error("Error parsing loaded sprite:", e);
             }
         }
+
+        document.querySelectorAll('.action-header').forEach(header => {
+            if (!header.querySelector('.action-name')) { // Ne pas ajouter deux fois pour les customs
+                header.addEventListener('click', () => {
+                    const actionGroup = header.parentElement;
+                    const toggleBtn = header.querySelector('.toggle-btn');
+                    actionGroup.classList.toggle('collapsed');
+                    toggleBtn.textContent = actionGroup.classList.contains('collapsed') ? '+' : '-';
+                });
+            }
+        });
 
         previewCanvas.addEventListener('click', (e) => {
             if (!player.sprite) return;
@@ -447,7 +685,6 @@
             tempCtx.drawImage(player.originalSprite, 0, 0);
             const pixelData = tempCtx.getImageData(x, y, 1, 1).data;
             const hexColor = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
-            console.log("Color picked from preview:", hexColor, "RGB:", pixelData);
 
             document.getElementById('transparentColor').value = hexColor;
             player.transparentColor = hexColor;
@@ -464,17 +701,35 @@
 
         document.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
-            if (key === player.controls.left) keys.left = true;
-            if (key === player.controls.right) keys.right = true;
-            if (key === player.controls.jump && !player.jumping) keys.jump = true;
+            if (key === player.controls.left.toLowerCase()) keys.left = true;
+            if (key === player.controls.right.toLowerCase()) keys.right = true;
+            if (key === player.controls.jump.toLowerCase() && !keys.jumpPressed) {
+                keys.jump = true;
+                keys.jumpPressed = true;
+            }
+            Object.keys(player.controls).filter(id => id.startsWith('custom')).forEach(animId => {
+                if (key === player.controls[animId] && !keys[animId]) {
+                    keys[animId] = true;
+                }
+            });
         });
 
         document.addEventListener('keyup', (e) => {
             const key = e.key.toLowerCase();
-            if (key === player.controls.left) keys.left = false;
-            if (key === player.controls.right) keys.right = false;
-            if (key === player.controls.jump) keys.jump = false;
+            if (key === player.controls.left.toLowerCase()) keys.left = false;
+            if (key === player.controls.right.toLowerCase()) keys.right = false;
+            if (key === player.controls.jump.toLowerCase()) {
+                keys.jump = false;
+                keys.jumpPressed = false;
+            }
+            Object.keys(player.controls).filter(id => id.startsWith('custom')).forEach(animId => {
+                if (key === player.controls[animId]) {
+                    keys[animId] = false;
+                }
+            });
         });
+
+        document.getElementById('addCustomAction').addEventListener('click', addCustomAction);
 
         function hexToRgb(hex) {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -494,10 +749,18 @@
 
             if (player.jumping) {
                 player.currentAnimation = 'jump';
+            } else if (keys.left || keys.right) {
+                player.currentAnimation = 'walk';
             } else {
-                if (keys.left || keys.right) {
-                    player.currentAnimation = 'walk';
-                } else {
+                let customTriggered = false;
+                for (const animId of Object.keys(player.controls).filter(id => id.startsWith('custom'))) {
+                    if (keys[animId]) {
+                        player.currentAnimation = animId;
+                        customTriggered = true;
+                        break;
+                    }
+                }
+                if (!customTriggered) {
                     player.currentAnimation = 'idle';
                 }
             }
@@ -526,8 +789,6 @@
             const frameX = anim.startX + limitedFrame * (anim.width + anim.paddingX);
             const frameY = anim.startY;
 
-            console.log(`Preview - Animation: ${player.currentAnimation}, Frame: ${limitedFrame}, StartX: ${anim.startX}, StartY: ${anim.startY}, FrameX: ${frameX}, FrameY: ${frameY}`);
-
             previewCtx.strokeStyle = 'red';
             previewCtx.lineWidth = 2;
             previewCtx.strokeRect(frameX, frameY, anim.width, anim.height);
@@ -536,28 +797,56 @@
         function gameLoop(timestamp) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            updateAnimation(player.speed / 60);
+
+            const currentBehavior = player.behaviors[player.currentAnimation];
+
+            let totalDistanceX = 0;
+            const walkDistanceX = player.behaviors.walk.distanceX;
             if (keys.left && player.x > 0) {
-                player.x -= player.speed;
+                totalDistanceX -= walkDistanceX;
                 player.facingRight = false;
             }
             if (keys.right && player.x < canvas.width - (player.width * player.zoom)) {
-                player.x += player.speed;
+                totalDistanceX += walkDistanceX;
                 player.facingRight = true;
             }
+            if (player.currentAnimation === 'idle' || player.currentAnimation === 'jump') {
+                totalDistanceX += currentBehavior.distanceX;
+            }
+            player.x += totalDistanceX;
+
             if (keys.jump && !player.jumping) {
-                player.velocityY = jumpForce;
+                player.velocityY = player.behaviors.jump.distanceY;
                 player.jumping = true;
             }
 
-            player.velocityY += gravity;
-            player.y += player.velocityY;
+            if (player.jumping) {
+                player.velocityY += gravity;
+                player.y += player.velocityY;
+            } else {
+                player.velocityY += gravity;
+                player.y += player.velocityY + currentBehavior.distanceY;
+            }
+
             if (player.y > canvas.height - (player.height * player.zoom)) {
                 player.y = canvas.height - (player.height * player.zoom);
                 player.velocityY = 0;
                 player.jumping = false;
             }
 
-            updateAnimation(player.speed/60);
+            if (player.y < 0) {
+                player.y = 0;
+                player.velocityY = 0;
+            }
+
+            if (player.x < 0) {
+                player.x = 0;
+            }
+            if (player.x > canvas.width - (player.width * player.zoom)) {
+                player.x = canvas.width - (player.width * player.zoom);
+            }
+
             updatePreview();
 
             if (player.sprite) {
@@ -565,8 +854,6 @@
                 const limitedFrame = Math.min(player.currentFrame, anim.frames - 1);
                 const frameX = anim.startX + limitedFrame * (anim.width + anim.paddingX);
                 const frameY = anim.startY;
-
-                console.log(`Game - Animation: ${player.currentAnimation}, Frame: ${limitedFrame}, StartX: ${anim.startX}, StartY: ${anim.startY}, FrameX: ${frameX}, FrameY: ${frameY}`);
 
                 ctx.save();
                 
