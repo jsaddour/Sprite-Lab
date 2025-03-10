@@ -14,5 +14,9 @@
     {
         "name": "Shinobi",
         "file": "shinobi.sprite"
-    }    
+    },
+    {
+        "name": "Soldier Slug",
+        "file": "soldierslug.sprite"
+    }        
 ]
