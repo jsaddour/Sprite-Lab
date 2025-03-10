@@ -275,7 +275,7 @@
         let gameEngine;
 
         function initializeEngine(spriteData = {}) {
-            gameEngine = new GameEngine('gameCanvas', spriteData);
+            gameEngine = new GameEngine('gameCanvas', spriteData, { preview: true });
             requestAnimationFrame(previewLoop);
         }
 
@@ -348,11 +348,14 @@
             const data = imageData.data;
             const transparentRGB = hexToRgb(document.getElementById('transparentColor').value);
 
+
+ console.log(`couleur selectionnée: ${transparentRGB}`);
+
             for (let i = 0; i < data.length; i += 4) {
                 const rDiff = Math.abs(data[i] - transparentRGB.r);
                 const gDiff = Math.abs(data[i + 1] - transparentRGB.g);
                 const bDiff = Math.abs(data[i + 2] - transparentRGB.b);
-                if (rDiff <= 20 && gDiff <= 20 && bDiff <= 20) {
+                if (rDiff <= 2 && gDiff <= 2 && bDiff <= 2) {
                     data[i + 3] = 0;
                 }
             }
@@ -519,21 +522,7 @@
             }
         });
 
-        previewCanvas.addEventListener('click', (e) => {
-            if (!playerSprite) return;
-
-            const rect = previewCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const tempCtx = document.createElement('canvas').getContext('2d');
-            tempCtx.drawImage(playerSprite, 0, 0);
-            const pixelData = tempCtx.getImageData(x, y, 1, 1).data;
-            const hexColor = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
-
-            document.getElementById('transparentColor').value = hexColor;
-            applyTransparency(playerSprite);
-        });
-
+       
         const inputs = document.querySelectorAll('#editorForm input, #editorForm select');
         inputs.forEach(input => {
             if (input.id !== 'spriteUpload') {

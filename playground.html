@@ -13,13 +13,84 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            position: relative;
         }
+
+        .horizontal-grid {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150%;
+            height: 150%;
+            transform: translate(-50%, -50%);
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(255, 255, 255, 0.1) 0px,
+                rgba(255, 255, 255, 0.1) 2px,
+                transparent 2px,
+                transparent 50px
+            );
+            pointer-events: none;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150%;
+            height: 150%;
+            transform: translate(-50%, -50%);
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.1) 0px,
+                rgba(255, 255, 255, 0.1) 2px,
+                transparent 2px,
+                transparent 50px
+            );
+            animation: slideGridSlow 20s linear infinite;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150%;
+            height: 150%;
+            transform: translate(-50%, -50%);
+            background: repeating-linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.1) 0px,
+                rgba(255, 255, 255, 0.1) 2px,
+                transparent 2px,
+                transparent 50px
+            );
+            animation: slideGridFast 12s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes slideGridSlow {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 0; }
+        }
+
+        @keyframes slideGridFast {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+
         #gameCanvas {
             width: 100%;
             height: 100%;
-            background: #FFFFFF;
+            background: transparent;
             border: 2px solid #2E7D32;
+            z-index: 2;
+            opacity: 1;
+			pointer-events: none
         }
+
         .error-message {
             position: absolute;
             top: 20px;
@@ -32,84 +103,203 @@
             background: rgba(0, 0, 0, 0.7);
             padding: 10px 20px;
             border-radius: 8px;
+            z-index: 10;
         }
+
+	    .platform {
+	          position: absolute;
+	          background-color: #4CAF50;
+	          border-radius: 10px;
+	          color: white;
+	          font-family: Arial, sans-serif;
+	          font-size: 14px;
+	          z-index: 1;
+	          animation: scrollPlatform linear infinite;
+			  height: 100px;
+	          width: 500px; /* Limite pour éviter des plateformes trop larges */
+	          padding: 0; /* Ajout */
+	          margin: 0; /* Ajout */
+	          line-height: 0; /* Ajout */
+	         
+	      }
+
+	      .platform > * {
+	          margin: 0;
+	          padding: 0;
+	      }
+
+	      .platform .twitter-tweet {
+	          margin: 0 !important;
+	          padding: 0 !important;
+	          border: 0 !important;
+	          display: block;
+	      }
+
+	      .platform .twitter-tweet-rendered {
+	          margin: 0 !important;
+	          padding: 0 !important;
+	      }
+		
     </style>
 </head>
 <body>
+    <div class="horizontal-grid"></div>
     <canvas id="gameCanvas"></canvas>
     <script src="engine.js"></script>
     <script>
-        // Récupérer le paramètre 'name' depuis l'URL (optionnel)
+        let gameInstance;
+
         const urlParams = new URLSearchParams(window.location.search);
         const spriteName = urlParams.get('name');
-
-        // Vérifier d'abord si des données sont disponibles dans localStorage
         const currentSpriteData = localStorage.getItem('currentSpriteData');
 
-        if (currentSpriteData) {
-            // Utiliser les données du sprite actuel depuis localStorage
-            try {
-                const spriteData = JSON.parse(currentSpriteData);
-                initializeGame(spriteData);
-                localStorage.removeItem('currentSpriteData'); // Nettoyer après usage
-            } catch (e) {
-                console.error("Error parsing current sprite data:", e);
-                displayError("Failed to load sprite data from editor.");
-            }
-        } else if (spriteName) {
-            // Si aucun sprite actuel, charger via le nom dans l'URL
-            loadSpriteFromName(spriteName);
-        } else {
-            displayError("No sprite data provided. Use ?name=SpriteName or load from editor.");
-        }
+			const tweets = [
+			    '<blockquote class="twitter-tweet" data-theme="dark" data-cards="hidden" data-conversation="none" data-width="550"><p lang="fr" dir="ltr">NOUVEL EPISODE de Joueur du Grenier ! Un épisode consacré à la dernière console d&#39;ATARI, la JAGUAR avec sa bibliothèque de jeu grandiose (non) <br><br>n&#39;hésitez pas comme toujours à partager et RT c&#39;est le meilleur moyen de nous aider. <br><br>Joueur du grenier - LA JAGUAR… <a href="https://t.co/jUwFPHLnnW">pic.twitter.com/jUwFPHLnnW</a></p>&mdash; Joueur du Grenier (@Frederic_Molas)  <a href="https://twitter.com/user1/status/1898774741030232432">March 9, 2025</a></blockquote>',
+				
+				
+						    '<blockquote class="twitter-tweet" data-theme="dark" data-cards="hidden" data-conversation="none" data-width="550">p lang="en" dir="ltr">xAI and Elon Musk shocked the world with mind blowing Grok 3 demos yesterday.<br><br>And people are already doing wild use cases with it.<br><br>10 examples: <a href="https://t.co/rCRsfp42NQ">pic.twitter.com/rCRsfp42NQ</a></p>&mdash; Min Choi (@minchoi) <a href="https://twitter.com/user1/status/1893974973468770400">March 9, 2025</a></blockquote>',
+							
+						    '<blockquote class="twitter-tweet" data-theme="dark" data-cards="hidden" data-conversation="none" data-width="550">p lang="en" dir="ltr">xAI and Elon Musk shocked the world with mind blowing Grok 3 demos yesterday.<br><br>And people are already doing wild use cases with it.<br><br>10 examples: <a href="https://t.co/rCRsfp42NQ">pic.twitter.com/rCRsfp42NQ</a></p>&mdash; Min Choi (@minchoi) <a href="https://twitter.com/user1/status/1893974973468770400">March 9, 2025</a></blockquote>',
+							
+				
+						    '<blockquote class="twitter-tweet" data-theme="dark" data-cards="hidden" data-conversation="none" data-width="550"><p lang="und" dir="ltr">€75,132.31</p>&mdash; Bitcoin (@Bitcoin) <a href="https://twitter.com/Bitcoin/status/1898936776384815216?ref_src=twsrc%5Etfw">March 10, 2025</a></blockquote>',
+			   
+				
+						    '<blockquote class="twitter-tweet" data-theme="dark" data-cards="hidden" data-conversation="none" data-width="550"><p lang="und" dir="ltr">€75,132.31</p>&mdash; Bitcoin (@Bitcoin) <a href="https://twitter.com/Bitcoin/status/1898936776384815216?ref_src=twsrc%5Etfw">March 10, 2025</a></blockquote>',
+			   
+			   
+						    '<blockquote class="twitter-tweet" data-theme="dark" data-cards="hidden" data-conversation="none" data-width="550">p lang="fr" dir="ltr">L’ultime face-à-face entre le champion Alex Pereira et Magomed Ankalaev avant le combat cette nuit 🔥<br><br>Ne manquez pas l’<a href="https://twitter.com/hashtag/UFC313?src=hash&amp;ref_src=twsrc%5Etfw">#UFC313</a> sur 🇫🇷 RMC Sport et 🇧🇪 VOOSport World <a href="https://t.co/YVKxzbcDSI">pic.twitter.com/YVKxzbcDSI</a></p>&mdash; UFC France (@UFCFRA) <a href="https://twitter.com/UFCFRA/status/1898262756068876423?ref_src=twsrc%5Etfw">March 8, 2025</a></blockquote>',
+							
+				
+						    '<blockquote class="twitter-tweet" data-theme="dark" data-cards="hidden" data-conversation="none" data-width="550"><p lang="en" dir="ltr">Vibecoding is the future!<br>I&#39;m building <a href="https://t.co/8utK1oGsSj">https://t.co/8utK1oGsSj</a>, a place for all the best vibe-coding tools, apps, games, examples, tutorials. The goal is to make it easier for people to get into it. Hit me up with your links if you have some cool stuff! I&#39;ll add it.</p>&mdash; Seb Lhomme (@slhomme) <a href="https://twitter.com/slhomme/status/1899124744894464302?ref_src=twsrc%5Etfw">March 10, 2025</a></blockquote>',
+			   
+			   
+						    '<blockquote class="twitter-tweet" data-theme="dark" data-cards="hidden" data-conversation="none" data-width="550"><p lang="en" dir="ltr">Vibe coding is all fun and games until you have to vibe debug</p>&mdash; Ben South (@bnj) <a href="https://twitter.com/bnj/status/1896712960304992302?ref_src=twsrc%5Etfw">March 4, 2025</a></blockquote>',
+			   
 
-        function loadSpriteFromName(name) {
-            fetch('/sprites/sprites.json')
-                .then(response => {
-                    if (!response.ok) throw new Error('Failed to load sprites.json');
-                    return response.json();
-                })
-                .then(spriteList => {
-                    const spriteData = spriteList.find(sprite => sprite.name.toLowerCase() === name.toLowerCase());
-                    if (!spriteData) {
-                        throw new Error(`Sprite "${name}" not found in sprites.json`);
-                    }
+						    '<blockquote class="twitter-tweet" data-theme="dark" data-cards="hidden" data-conversation="none" data-width="550"><p lang="en" dir="ltr">What a MOMENT 🤯<br><br>At <a href="https://twitter.com/hashtag/UFC313?src=hash&amp;ref_src=twsrc%5Etfw">#UFC313</a>, <a href="https://twitter.com/Ruffymma?ref_src=twsrc%5Etfw">@RuffyMMA</a> landed the 16th wheel kick knockout in UFC history! <a href="https://t.co/ZEbPycPZSV">pic.twitter.com/ZEbPycPZSV</a></p>&mdash; UFC (@ufc) <a href="https://twitter.com/ufc/status/1898902373944447315?ref_src=twsrc%5Etfw">March 10, 2025</a></blockquote>',
+							
+							
+				
+						    '<blockquote class="twitter-tweet" data-theme="dark" data-cards="hidden" data-conversation="none" data-width="550"><p lang="en" dir="ltr">The only question I always had after watching Idiocracy was “how the hell do they build something that requires a bit of intelligence, such as software?”.<br><br>And vibe coding is LITERALLY the right answer to this question.<br><br>Idiocracy is a documentary from the future. <a href="https://t.co/LuJk6n6b5l">pic.twitter.com/LuJk6n6b5l</a></p>&mdash; Marc Backes (@themarcba) <a href="https://twitter.com/themarcba/status/1898625266689155567?ref_src=twsrc%5Etfw">March 9, 2025</a></blockquote>',
+			   
+			   
 
-                    return fetch(`/sprites/${spriteData.file}`)
-                        .then(response => {
-                            if (!response.ok) throw new Error(`Failed to load ${spriteData.file}`);
-                            return response.text();
-                        })
-                        .then(data => {
-                            const characterData = JSON.parse(data);
-                            initializeGame(characterData);
-                        });
-                })
-                .catch(error => {
-                    console.error("Error loading sprite:", error);
-                    displayError(error.message);
-                });
-        }
+			];
 
-        function initializeGame(spriteData) {
-            const canvas = document.getElementById('gameCanvas');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
 
-            new GameEngine('gameCanvas', spriteData);
 
-            window.addEventListener('resize', () => {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            });
-        }
+		    if (currentSpriteData) {
+		        try {
+		            const spriteData = JSON.parse(currentSpriteData);
+		            initializeGame(spriteData);
+		            localStorage.removeItem('currentSpriteData');
+		        } catch (e) {
+		            console.error("Error parsing current sprite data:", e);
+		            displayError("Failed to load sprite data from editor.");
+		        }
+		    } else if (spriteName) {
+		        loadSpriteFromName(spriteName);
+		    } else {
+		        displayError("No sprite data provided. Use ?name=SpriteName or load from editor.");
+		    }
 
-        function displayError(message) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.textContent = message;
-            document.body.appendChild(errorDiv);
-        }
+		    function loadSpriteFromName(name) {
+		        fetch('/sprites/sprites.json')
+		            .then(response => {
+		                if (!response.ok) throw new Error('Failed to load sprites.json');
+		                return response.json();
+		            })
+		            .then(spriteList => {
+		                const spriteData = spriteList.find(sprite => sprite.name.toLowerCase() === name.toLowerCase());
+		                if (!spriteData) {
+		                    throw new Error(`Sprite "${name}" not found in sprites.json`);
+		                }
+		                return fetch(`/sprites/${spriteData.file}`)
+		                    .then(response => {
+		                        if (!response.ok) throw new Error(`Failed to load ${spriteData.file}`);
+		                        return response.text();
+		                    })
+		                    .then(data => {
+		                        const characterData = JSON.parse(data);
+		                        initializeGame(characterData);
+		                    });
+		            })
+		            .catch(error => {
+		                console.error("Error loading sprite:", error);
+		                displayError(error.message);
+		            });
+		    }
+
+		    function initializeGame(spriteData) {
+		        const canvas = document.getElementById('gameCanvas');
+		        canvas.width = window.innerWidth;
+		        canvas.height = window.innerHeight;
+
+		        gameInstance = new GameEngine('gameCanvas', spriteData);
+		        generatePlatforms(gameInstance);
+
+		        window.addEventListener('resize', () => {
+		            canvas.width = window.innerWidth;
+		            canvas.height = window.innerHeight;
+		            gameInstance.onResize(canvas.width, canvas.height);
+		        });
+		    }
+
+		    function generatePlatforms(game) {
+		        const initialCount = 10;
+		        updatePlatforms(initialCount, game);
+		    }
+
+		    function updatePlatforms(count, game = gameInstance) {
+		        document.querySelectorAll('.platform').forEach(platform => platform.remove());
+		        game.platforms = [];
+
+		        // Plateforme initiale sous le joueur
+		        const initialPlatform = document.createElement('div');
+		        initialPlatform.className = 'platform';
+		        initialPlatform.style.top = `${window.innerHeight * 0.5}px`;
+		        initialPlatform.style.left = `${50}px`;
+		        initialPlatform.innerHTML = tweets[0];
+		        document.body.appendChild(initialPlatform);
+		        const initialWidth = initialPlatform.scrollWidth + 20;
+		        const initialHeight = initialPlatform.scrollHeight + 20;
+		        initialPlatform.style.width = `${initialWidth}px`;
+		        initialPlatform.style.height = `${initialHeight}px`;
+		        game.addPlatform(initialPlatform);
+
+		        // Autres plateformes avec espacement minimal
+		        let lastLeft = 50; // Position de la dernière plateforme
+		        for (let i = 1; i < Math.min(count, tweets.length); i++) {
+		            const platform = document.createElement('div');
+		            platform.className = 'platform';
+
+		            const top = Math.random() * (window.innerHeight - 150);
+		            const left = lastLeft + 300 + Math.random() * 300; // Espacement minimum de 300px + aléatoire
+
+		            platform.style.top = `${top}px`;
+		            platform.style.left = `${left}px`;
+
+		            platform.innerHTML = tweets[i % tweets.length];
+		            document.body.appendChild(platform);
+
+		            const contentWidth = platform.scrollWidth + 20;
+		            const contentHeight = platform.scrollHeight + 20;
+		            platform.style.width = `${contentWidth}px`;
+		            platform.style.height = `${contentHeight}px`;
+
+		            game.addPlatform(platform);
+		            lastLeft = left; // Mettre à jour la dernière position
+		        }
+		    }
+			   
+		    function displayError(message) {
+		        const errorDiv = document.createElement('div');
+		        errorDiv.className = 'error-message';
+		        errorDiv.textContent = message;
+		        document.body.appendChild(errorDiv);
+		    }
     </script>
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </body>
 </html>
